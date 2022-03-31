@@ -15,5 +15,13 @@ func main() {
 		})
 	})
 
+	router.POST("/users/:id", func(c *gin.Context) {
+		userId := c.Param("id")
+
+		c.JSON(http.StatusOK, gin.H{
+			"id": userId,
+		})
+	})
+
 	router.Run(":8000")
 }
