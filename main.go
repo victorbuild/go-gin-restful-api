@@ -1,27 +1,17 @@
 package main
 
 import (
-	"net/http"
+	routers "restfulapi/Routers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	router := gin.Default()
+	r := gin.Default()
 
-	router.GET("/test", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "first test get api",
-		})
-	})
+	v1 := r.Group("/v1")
 
-	router.POST("/users/:id", func(c *gin.Context) {
-		userId := c.Param("id")
+	routers.AddUserRouter(v1)
 
-		c.JSON(http.StatusOK, gin.H{
-			"id": userId,
-		})
-	})
-
-	router.Run(":8000")
+	r.Run(":8000")
 }
