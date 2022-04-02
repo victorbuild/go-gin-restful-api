@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	models "restfulapi/Models"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,4 +26,41 @@ func PostUser(c *gin.Context) {
 	}
 	users = append(users, user)
 	c.JSON(http.StatusOK, user)
+}
+
+func DeleteUser(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Param("id"))
+	for _, user := range users {
+		log.Println(user)
+		users = append(users[:userId], users[userId+1:]...)
+		c.JSON(http.StatusNoContent, nil)
+		return
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{
+		"message": "not found",
+	})
+}
+
+func PutUser(c *gin.Context) {
+	beforeUser := models.User{}
+	err := c.BindJSON(&beforeUser)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "data error",
+		})
+		return
+	}
+	userId, _ := strconv.Atoi(c.Param("id"))
+	for key, user := range users {
+		if userId == user.Id {
+			users[key] = beforeUser
+			log.Println(users[key])
+			c.JSON(http.StatusOK, users[key])
+			return
+		}
+	}
+	c.JSON(http.StatusNotFound, gin.H{
+		"message": "not found",
+	})
 }
