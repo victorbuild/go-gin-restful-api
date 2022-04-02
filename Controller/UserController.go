@@ -12,7 +12,20 @@ import (
 var users = []models.User{}
 
 func FindAllUsers(c *gin.Context) {
+	users := models.FindAllUsers()
 	c.JSON(http.StatusOK, users)
+}
+
+func FindByUserId(c *gin.Context) {
+	user := models.FindByUserId(c.Param("id"))
+	if user.Id == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "not found",
+		})
+		return
+	}
+	log.Println("User ->", user)
+	c.JSON(http.StatusOK, user)
 }
 
 func PostUser(c *gin.Context) {
