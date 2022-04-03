@@ -9,8 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var users = []models.User{}
-
 func FindAllUsers(c *gin.Context) {
 	users := models.FindAllUsers()
 	c.JSON(http.StatusOK, users)
@@ -57,23 +55,24 @@ func DeleteUser(c *gin.Context) {
 }
 
 func PutUser(c *gin.Context) {
-	beforeUser := models.User{}
-	err := c.BindJSON(&beforeUser)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "data error",
+	var input models.User
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user := models.FindByUserId(c.Param("id"))
+
+	result := models.UpdateUser(user, input)
+
+	if result == 1 {
+		user = models.FindByUserId(c.Param("id"))
+		c.JSON(http.StatusOK, gin.H{
+			"data": user,
 		})
 		return
 	}
-	userId, _ := strconv.Atoi(c.Param("id"))
-	for key, user := range users {
-		if userId == user.ID {
-			users[key] = beforeUser
-			log.Println(users[key])
-			c.JSON(http.StatusOK, users[key])
-			return
-		}
-	}
+
 	c.JSON(http.StatusNotFound, gin.H{
 		"message": "not found",
 	})

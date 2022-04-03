@@ -12,6 +12,12 @@ type User struct {
 	Email    string `json:"email"`
 }
 
+type UpdateUserInput struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+}
+
 func FindAllUsers() []User {
 	var users []User
 	db.DBconnect.Find(&users)
@@ -36,6 +42,16 @@ func CreateUser(user User) int {
 
 func DeleteUser(userId int) int64 {
 	result := db.DBconnect.Delete(&User{}, userId)
+	if result.Error != nil {
+		log.Panic(result.Error)
+	}
+
+	return result.RowsAffected
+}
+
+func UpdateUser(user User, input User) int64 {
+	result := db.DBconnect.Model(&user).Updates(input)
+
 	if result.Error != nil {
 		log.Panic(result.Error)
 	}
