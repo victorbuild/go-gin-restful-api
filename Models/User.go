@@ -33,3 +33,12 @@ func CreateUser(user User) int {
 
 	return user.ID
 }
+
+func DeleteUser(userId int) int64 {
+	result := db.DBconnect.Delete(&User{}, userId)
+	if result.Error != nil {
+		log.Panic(result.Error)
+	}
+
+	return result.RowsAffected
+}

@@ -44,9 +44,9 @@ func PostUser(c *gin.Context) {
 
 func DeleteUser(c *gin.Context) {
 	userId, _ := strconv.Atoi(c.Param("id"))
-	for _, user := range users {
-		log.Println(user)
-		users = append(users[:userId], users[userId+1:]...)
+
+	result := models.DeleteUser(userId)
+	if result == 1 {
 		c.JSON(http.StatusNoContent, nil)
 		return
 	}
