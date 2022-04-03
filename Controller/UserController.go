@@ -18,7 +18,7 @@ func FindAllUsers(c *gin.Context) {
 
 func FindByUserId(c *gin.Context) {
 	user := models.FindByUserId(c.Param("id"))
-	if user.Id == 0 {
+	if user.ID == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "not found",
 		})
@@ -37,7 +37,8 @@ func PostUser(c *gin.Context) {
 		})
 		return
 	}
-	users = append(users, user)
+	createUserId := models.CreateUser(user)
+	user.ID = createUserId
 	c.JSON(http.StatusOK, user)
 }
 
@@ -66,7 +67,7 @@ func PutUser(c *gin.Context) {
 	}
 	userId, _ := strconv.Atoi(c.Param("id"))
 	for key, user := range users {
-		if userId == user.Id {
+		if userId == user.ID {
 			users[key] = beforeUser
 			log.Println(users[key])
 			c.JSON(http.StatusOK, users[key])
