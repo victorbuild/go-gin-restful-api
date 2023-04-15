@@ -11,7 +11,9 @@ import (
 
 func FindAllUsers(c *gin.Context) {
 	users := models.FindAllUsers()
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, gin.H{
+		"data": users,
+	})
 }
 
 func FindByUserId(c *gin.Context) {
@@ -23,7 +25,9 @@ func FindByUserId(c *gin.Context) {
 		return
 	}
 	log.Println("User ->", user)
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{
+		"data": user,
+	})
 }
 
 func PostUser(c *gin.Context) {
@@ -37,7 +41,9 @@ func PostUser(c *gin.Context) {
 	}
 	createUserId := models.CreateUser(user)
 	user.ID = createUserId
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{
+		"data": user,
+	})
 }
 
 func DeleteUser(c *gin.Context) {
