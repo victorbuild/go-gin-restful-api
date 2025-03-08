@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	db "restfulapi/database"
@@ -40,7 +41,19 @@ func hashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
+// 檢查 Email 是否已存在
+func isEmailExists(email string) bool {
+	var count int64
+	db.DBconnect.Model(&User{}).Where("email = ?", email).Count(&count)
+	return count > 0
+}
+
 func CreateUser(user User) (uint, error) {
+	// 檢查 Email 是否已存在
+	if isEmailExists(user.Email) {
+		return 0, errors.New("email already registered")
+	}
+
 	// 加密密碼
 	hashedPassword, err := hashPassword(user.Password)
 	if err != nil {
@@ -79,13 +92,4 @@ func UpdateUser(user User, input User) int64 {
 	}
 
 	return result.RowsAffected
-}
-
-func Migrate() {
-	err := db.DBconnect.AutoMigrate(&User{})
-	if err != nil {
-		log.Panic("❌ Database migration failed:", err)
-	} else {
-		log.Println("✅ Database migration completed!")
-	}
 }

@@ -42,9 +42,11 @@ func PostUser(c *gin.Context) {
 	createUserId, createUserErr := models.CreateUser(user)
 
 	if createUserErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Error",
-		})
+		if createUserErr.Error() == "email already registered" {
+			c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		}
 		return
 	}
 
