@@ -3,7 +3,7 @@ package controller
 import (
 	"log"
 	"net/http"
-	models "restfulapi/Models"
+	"restfulapi/models"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -39,7 +39,15 @@ func PostUser(c *gin.Context) {
 		})
 		return
 	}
-	createUserId := models.CreateUser(user)
+	createUserId, createUserErr := models.CreateUser(user)
+
+	if createUserErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error",
+		})
+		return
+	}
+
 	user.ID = createUserId
 	c.JSON(http.StatusOK, gin.H{
 		"data": user,
