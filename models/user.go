@@ -20,6 +20,7 @@ type User struct {
 	Name     string `gorm:"size:255" json:"name"`
 	Password string `gorm:"size:255" json:"password"`
 	Email    string `gorm:"uniqueIndex;size:255" json:"email"`
+	Role     string `gorm:"size:255" json:"role"`
 }
 
 type UpdateUserInput struct {

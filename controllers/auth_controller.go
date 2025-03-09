@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"restfulapi/config"
 	db "restfulapi/database"
 	"restfulapi/models"
 	"restfulapi/utils"
@@ -17,6 +18,10 @@ func RegisterUser(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.ErrInvalidInput)
 		return
 	}
+
+	// 強制設定 role 為 "user"，防止惡意註冊成 admin
+	user.Role = "user"
+
 	createUserId, createUserErr := models.CreateUser(user)
 
 	if createUserErr != nil {
@@ -65,8 +70,18 @@ func LoginUser(c *gin.Context) {
 		return
 	}
 
-	// **回應標準 JSON**
-	utils.SuccessResponse(c, "Login successful!", gin.H{})
+	// 產生 Access Token & Refresh Token
+	accessToken, refreshToken, err := config.GenerateTokens(user.ID, user.Email, user.Role)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.ErrTokenGenerationFailed)
+		return
+	}
+
+	// 回應標準 JSON
+	utils.SuccessResponse(c, "Login successful!", gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
 }
 
 // LogoutUser - 使用者登出（JWT 無狀態登出）
