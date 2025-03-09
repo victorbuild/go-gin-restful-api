@@ -7,6 +7,14 @@ import (
 	db "restfulapi/database"
 )
 
+// 預先定義錯誤變數
+// 到時候再看要搬去哪
+var (
+	ErrEmailExists      = errors.New("email already registered")
+	ErrPasswordHashFail = errors.New("password encryption failed")
+	ErrDatabaseError    = errors.New("database error")
+)
+
 type User struct {
 	ID       uint   `gorm:"primaryKey" json:"id"` // 改為 uint，並標記為主鍵
 	Name     string `gorm:"size:255" json:"name"`
@@ -51,14 +59,14 @@ func isEmailExists(email string) bool {
 func CreateUser(user User) (uint, error) {
 	// 檢查 Email 是否已存在
 	if isEmailExists(user.Email) {
-		return 0, errors.New("email already registered")
+		return 0, ErrEmailExists
 	}
 
 	// 加密密碼
 	hashedPassword, err := hashPassword(user.Password)
 	if err != nil {
 		log.Println("❌ Failed to hash password:", err)
-		return 0, err
+		return 0, ErrPasswordHashFail
 	}
 
 	// 將加密後的密碼存入 User 結構
@@ -69,7 +77,7 @@ func CreateUser(user User) (uint, error) {
 
 	if result.Error != nil {
 		log.Println("❌ Failed to create user:", result.Error)
-		return 0, result.Error
+		return 0, ErrDatabaseError
 	}
 
 	return user.ID, nil
@@ -92,4 +100,10 @@ func UpdateUser(user User, input User) int64 {
 	}
 
 	return result.RowsAffected
+}
+
+// CheckPassword 驗證使用者輸入的密碼是否正確
+func (u *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return err == nil
 }

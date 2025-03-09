@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	routers "restfulapi/Routers"
 	"restfulapi/database"
 	"restfulapi/models"
+	"restfulapi/routers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,13 +20,14 @@ func main() {
 	}
 
 	fmt.Println("📌 Running database migration...")
-	database.DBconnect.AutoMigrate(&models.User{}) // ✅ 這行建立 `users` 資料表
+	database.DBconnect.AutoMigrate(&models.User{})
 	fmt.Println("✅ Database migration completed!")
 
 	// 初始化 Gin 路由
 	r := gin.Default()
 	v1 := r.Group("/v1")
-	routers.AddUserRouter(v1)
+	routers.SetupUserRoutes(v1) // 一般用戶 API
+	routers.SetupAuthRoutes(v1) // 註冊 / 登入 API
 
 	// 啟動伺服器
 	r.Run(":8000")
