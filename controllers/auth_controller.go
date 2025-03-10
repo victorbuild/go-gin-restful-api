@@ -62,7 +62,7 @@ func LoginUser(c *gin.Context) {
 
 	// 查詢使用者
 	var user models.User
-	db.DBconnect.Where("email = ?", input.Email).First(&user)
+	db.DbConnect.Where("email = ?", input.Email).First(&user)
 
 	// 檢查密碼
 	if !user.CheckPassword(input.Password) {

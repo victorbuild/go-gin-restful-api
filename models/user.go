@@ -10,6 +10,7 @@ import (
 // 預先定義錯誤變數
 // 到時候再看要搬去哪
 var (
+	ErrUserNotFound     = errors.New("user not found")
 	ErrEmailExists      = errors.New("email already registered")
 	ErrPasswordHashFail = errors.New("password encryption failed")
 	ErrDatabaseError    = errors.New("database error")
@@ -18,7 +19,7 @@ var (
 type User struct {
 	ID       uint   `gorm:"primaryKey" json:"id"` // 改為 uint，並標記為主鍵
 	Name     string `gorm:"size:255" json:"name"`
-	Password string `gorm:"size:255" json:"password"`
+	Password string `gorm:"size:255" json:"-"`
 	Email    string `gorm:"uniqueIndex;size:255" json:"email"`
 	Role     string `gorm:"size:255" json:"role"`
 }
@@ -31,14 +32,25 @@ type UpdateUserInput struct {
 
 func FindAllUsers() []User {
 	var users []User
-	db.DBconnect.Find(&users)
+	db.DbConnect.Find(&users)
 	return users
 }
 
-func FindByUserId(userId string) User {
+func FindByUserId(userId int) (User, error) {
 	var user User
-	db.DBconnect.Where("id = ?", userId).First(&user)
-	return user
+	result := db.DbConnect.Where("id = ?", userId).First(&user)
+
+	// 如果沒有找到使用者，回傳 `ErrUserNotFound`
+	if result.RowsAffected == 0 {
+		return User{}, ErrUserNotFound
+	}
+
+	// 其他錯誤（例如資料庫錯誤）
+	if result.Error != nil {
+		return User{}, result.Error
+	}
+
+	return user, nil
 }
 
 // 加密密碼
@@ -50,16 +62,25 @@ func hashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-// 檢查 Email 是否已存在
-func isEmailExists(email string) bool {
+// IsEmailExists - 確認 `email` 是否已存在（可選擇排除 `excludeUserID`）
+func IsEmailExists(email string, excludeUserID int) bool {
 	var count int64
-	db.DBconnect.Model(&User{}).Where("email = ?", email).Count(&count)
+
+	// 建立查詢條件
+	query := db.DbConnect.Model(&User{}).Where("email = ?", email)
+
+	// 如果 `excludeUserID` > 0，則排除該 ID
+	if excludeUserID > 0 {
+		query = query.Where("id != ?", excludeUserID)
+	}
+
+	query.Count(&count)
 	return count > 0
 }
 
 func CreateUser(user User) (uint, error) {
 	// 檢查 Email 是否已存在
-	if isEmailExists(user.Email) {
+	if IsEmailExists(user.Email, 0) {
 		return 0, ErrEmailExists
 	}
 
@@ -74,7 +95,7 @@ func CreateUser(user User) (uint, error) {
 	user.Password = hashedPassword
 
 	// 存入資料庫
-	result := db.DBconnect.Create(&user)
+	result := db.DbConnect.Create(&user)
 
 	if result.Error != nil {
 		log.Println("❌ Failed to create user:", result.Error)
@@ -84,17 +105,19 @@ func CreateUser(user User) (uint, error) {
 	return user.ID, nil
 }
 
-func DeleteUser(userId int) int64 {
-	result := db.DBconnect.Delete(&User{}, userId)
+func DeleteUser(userId int) (int64, error) {
+	result := db.DbConnect.Delete(&User{}, userId)
+
 	if result.Error != nil {
-		log.Panic(result.Error)
+		log.Println("❌ 刪除使用者失敗:", result.Error) // ✅ 只記錄 log，不會讓程式崩潰
+		return 0, result.Error                  // 回傳錯誤，讓上層處理
 	}
 
-	return result.RowsAffected
+	return result.RowsAffected, nil // 回傳影響的行數
 }
 
-func UpdateUser(user User, input User) int64 {
-	result := db.DBconnect.Model(&user).Updates(input)
+func UpdateUser(user User, input UpdateUserInput) int64 {
+	result := db.DbConnect.Model(&user).Updates(input)
 
 	if result.Error != nil {
 		log.Panic(result.Error)
