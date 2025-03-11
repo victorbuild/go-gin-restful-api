@@ -19,7 +19,7 @@ var (
 type User struct {
 	ID       uint   `gorm:"primaryKey" json:"id"` // 改為 uint，並標記為主鍵
 	Name     string `gorm:"size:255" json:"name"`
-	Password string `gorm:"size:255" json:"-"`
+	Password string `gorm:"size:255" json:"password"`
 	Email    string `gorm:"uniqueIndex;size:255" json:"email"`
 	Role     string `gorm:"size:255" json:"role"`
 }
@@ -28,12 +28,6 @@ type UpdateUserInput struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 	Email    string `json:"email"`
-}
-
-func FindAllUsers() []User {
-	var users []User
-	db.DbConnect.Find(&users)
-	return users
 }
 
 func FindByUserId(userId int) (User, error) {

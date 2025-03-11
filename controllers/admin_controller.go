@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"restfulapi/config"
 	"restfulapi/models"
+	repository "restfulapi/repositories"
+	service "restfulapi/services"
 	"restfulapi/utils"
 	"strconv"
 	"time"
@@ -16,7 +18,10 @@ import (
 
 // FindAllUsers - 取得所有使用者
 func FindAllUsers(c *gin.Context) {
-	users := models.FindAllUsers()
+	userRepo := repository.NewUserRepository()
+	userService := service.NewUserService(userRepo)
+	users := userService.GetAllUsers()
+
 	utils.SuccessResponse(c, "All users retrieved successfully", gin.H{"items": users})
 }
 
