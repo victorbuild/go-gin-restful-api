@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"restfulapi/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,8 +13,15 @@ var DbConnect *gorm.DB
 
 func DB() {
 	var err error
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Taipei",
+		config.DatabaseConfig.Host,
+		config.DatabaseConfig.User,
+		config.DatabaseConfig.Password,
+		config.DatabaseConfig.DBName,
+		config.DatabaseConfig.Port,
+	)
 
-	dsn := "host=localhost user=postgres password=admin dbname=postgres port=5432 sslmode=disable TimeZone=Asia/Taipei"
 	DbConnect, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {

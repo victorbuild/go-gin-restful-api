@@ -1,11 +1,15 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"restfulapi/config"
 	"restfulapi/models"
 	"restfulapi/utils"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,8 +28,26 @@ func FindByUserId(c *gin.Context) {
 		return
 	}
 
+	ctx := context.Background()
+	cacheKey := "user:" + strconv.Itoa(userId)
+
+	// 1 先查詢 Redis
+	cachedUser, err := config.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		var user models.User
+		if json.Unmarshal([]byte(cachedUser), &user) == nil {
+			utils.SuccessResponse(c, "User retrieved from cache", gin.H{
+				"id":    user.ID,
+				"name":  user.Name,
+				"email": user.Email,
+				"role":  user.Role,
+			})
+			return
+		}
+	}
+
 	user, err := models.FindByUserId(userId)
-	// **使用 `errors.Is()` 來區分不同的錯誤**
+	// 使用 `errors.Is()` 來區分不同的錯誤
 	if errors.Is(err, models.ErrUserNotFound) {
 		utils.ErrorResponse(c, http.StatusNotFound, "User not found", 1009)
 		return
@@ -34,10 +56,15 @@ func FindByUserId(c *gin.Context) {
 		return
 	}
 
+	// 存入 Redis，快取 5 分鐘
+	userJSON, _ := json.Marshal(user)
+	config.RedisClient.Set(ctx, cacheKey, userJSON, time.Minute*5)
+
 	utils.SuccessResponse(c, "User retrieved successfully", gin.H{
 		"id":    user.ID,
 		"name":  user.Name,
 		"email": user.Email,
+		"role":  user.Role,
 	})
 }
 

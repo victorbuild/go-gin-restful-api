@@ -13,10 +13,10 @@ var JWTConfig = struct {
 	AccessTokenExpiry  time.Duration
 	RefreshTokenExpiry time.Duration
 }{
-	AccessTokenSecret:  getEnv("ACCESS_TOKEN_SECRET", "your-access-secret"),
-	RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret"),
-	AccessTokenExpiry:  time.Second * time.Duration(getEnvInt("ACCESS_TOKEN_EXPIRY", 3600)),    // 1 小時
-	RefreshTokenExpiry: time.Second * time.Duration(getEnvInt("REFRESH_TOKEN_EXPIRY", 604800)), // 7 天
+	AccessTokenSecret:  GetEnv("ACCESS_TOKEN_SECRET", "your-access-secret"),
+	RefreshTokenSecret: GetEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret"),
+	AccessTokenExpiry:  time.Second * time.Duration(GetEnvInt("ACCESS_TOKEN_EXPIRY", 3600)),    // 1 小時
+	RefreshTokenExpiry: time.Second * time.Duration(GetEnvInt("REFRESH_TOKEN_EXPIRY", 604800)), // 7 天
 }
 
 // GenerateTokens 產生 Access Token & Refresh Token
@@ -52,6 +52,9 @@ func GenerateTokens(userID uint, email, role string) (string, string, error) {
 // ValidateToken 驗證 Token 是否有效
 func ValidateToken(tokenString, secret string) (*jwt.Token, error) {
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
 		return []byte(secret), nil
 	})
 }

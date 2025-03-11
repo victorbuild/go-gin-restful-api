@@ -2,19 +2,23 @@ package main
 
 import (
 	"fmt"
+	"restfulapi/config"
 	"restfulapi/database"
 	"restfulapi/models"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	// **初始化資料庫**
-	database.DB() // ✅ 確保這行執行後 `DbConnect` 不為 nil
+	// 初始化 Redis 連線
+	config.InitRedis()
 
-	// **確保 `DbConnect` 已正確初始化後再執行 Migrate**
+	// 初始化資料庫
+	database.DB()
+
 	if database.DbConnect == nil {
 		fmt.Println("❌ Database connection failed, cannot run migration!")
 		return
