@@ -7,6 +7,7 @@ import (
 	"restfulapi/models"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
+	"restfulapi/workers"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
@@ -27,6 +28,9 @@ func main() {
 	fmt.Println("📌 Running database migration...")
 	database.DbConnect.AutoMigrate(&models.User{})
 	fmt.Println("✅ Database migration completed!")
+
+	// **啟動 RabbitMQ Worker（使用 Goroutine）**
+	go workers.StartUserWorker()
 
 	// 初始化 Gin 路由
 	r := gin.Default()

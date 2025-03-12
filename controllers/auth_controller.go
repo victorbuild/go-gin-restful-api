@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"restfulapi/config"
 	db "restfulapi/database"
@@ -39,6 +41,28 @@ func RegisterUser(c *gin.Context) {
 	}
 
 	user.ID = createUserId
+
+	// **定義 RabbitMQ 訊息結構（不包含密碼）**
+	type UserCreatedMessage struct {
+		ID    uint   `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Role  string `json:"role"`
+	}
+
+	// 轉換成不包含密碼的格式
+	messageData := UserCreatedMessage{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+		Role:  user.Role,
+	}
+
+	// **發送 RabbitMQ 事件**
+	message, _ := json.Marshal(messageData)
+	config.PublishMessage("user_created", string(message))
+
+	log.Println("✅ 註冊成功，已發送 user_created 事件:", string(message))
 
 	// **回應標準 JSON**
 	utils.SuccessResponse(c, "User created successfully", gin.H{
