@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"restfulapi/config"
 	"restfulapi/database"
+	"restfulapi/middlewares"
 	"restfulapi/models"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
@@ -16,6 +17,8 @@ import (
 func main() {
 	// 初始化 Redis 連線
 	config.InitRedis()
+
+	config.InitKafka()
 
 	// 初始化資料庫
 	database.DB()
@@ -31,9 +34,15 @@ func main() {
 
 	// **啟動 RabbitMQ Worker（使用 Goroutine）**
 	go workers.StartUserWorker()
+	// **啟動 Kafka Log Worker**
+	go workers.StartLogWorker()
 
 	// 初始化 Gin 路由
 	r := gin.Default()
+
+	// **加入 Logger Middleware，確保所有請求都記錄到 Kafka**
+	r.Use(middlewares.LoggerMiddleware())
+
 	v1 := r.Group("/v1")
 	// 管理員 API
 	adminRoutes.SetupAdminUserRoutes(v1)
