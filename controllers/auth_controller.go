@@ -8,6 +8,7 @@ import (
 	"restfulapi/config"
 	db "restfulapi/database"
 	"restfulapi/models"
+	"restfulapi/pkg/logger"
 	"restfulapi/utils"
 
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,7 @@ func RegisterUser(c *gin.Context) {
 		case errors.Is(createUserErr, models.ErrPasswordHashFail):
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrPasswordHashFail)
 		case errors.Is(createUserErr, models.ErrDatabaseError):
+			logger.LogError("register", createUserErr)
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrDatabaseError)
 		default:
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrInternalError)

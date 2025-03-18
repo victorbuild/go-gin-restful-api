@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s  # 每 5 秒收集一次數據
+
+scrape_configs:
+  - job_name: 'go-api'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8000']  # 你的 API 伺服器
