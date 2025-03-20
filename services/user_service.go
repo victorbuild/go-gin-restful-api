@@ -1,16 +1,16 @@
-package service
+package services
 
 import (
 	"restfulapi/models"
-	repository "restfulapi/repositories"
+	"restfulapi/repositories"
 )
 
 type UserService struct {
-	userRepo *repository.UserRepository
+	userRepo repositories.IUserRepository
 }
 
 // NewUserService 建立一個新的 UserService 實例
-func NewUserService(userRepo *repository.UserRepository) *UserService {
+func NewUserService(userRepo repositories.IUserRepository) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 	}
