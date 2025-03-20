@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/streadway/amqp"
 	"log"
+
+	"github.com/rabbitmq/amqp091-go"
 )
 
-var RabbitConn *amqp.Connection
-var RabbitChannel *amqp.Channel
+var RabbitConn *amqp091.Connection
+var RabbitChannel *amqp091.Channel
 
 func InitRabbitMQ() {
 	// **從 `.env` 讀取 RabbitMQ 設定**
@@ -21,7 +22,7 @@ func InitRabbitMQ() {
 	)
 
 	var err error
-	RabbitConn, err = amqp.Dial(rabbitMQURL)
+	RabbitConn, err = amqp091.Dial(rabbitMQURL)
 	if err != nil {
 		log.Fatal("❌ RabbitMQ 連線失敗:", err)
 	}
@@ -32,7 +33,14 @@ func InitRabbitMQ() {
 	}
 
 	// 確保 `user_created` 佇列存在
-	_, err = RabbitChannel.QueueDeclare("user_created", true, false, false, false, nil)
+	_, err = RabbitChannel.QueueDeclare(
+		"user_created",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		log.Fatal("❌ 無法建立 Queue:", err)
 	}
@@ -42,13 +50,30 @@ func InitRabbitMQ() {
 
 // PublishMessage 發送訊息
 func PublishMessage(queueName string, message string) {
-	err := RabbitChannel.Publish(
-		"", queueName, false, false,
-		amqp.Publishing{ContentType: "text/plain", Body: []byte(message)},
+	err := RabbitChannel.PublishWithContext(
+		nil,
+		"",
+		queueName,
+		false,
+		false,
+		amqp091.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(message),
+		},
 	)
 	if err != nil {
 		log.Println("❌ 發送訊息失敗:", err)
-	} else {
-		log.Println("✅ 訊息發送成功:", message)
+	}
+
+	log.Println("✅ 訊息發送成功:", message)
+}
+
+// CloseRabbitMQ 關閉 RabbitMQ 連線
+func CloseRabbitMQ() {
+	if RabbitChannel != nil {
+		RabbitChannel.Close()
+	}
+	if RabbitConn != nil {
+		RabbitConn.Close()
 	}
 }

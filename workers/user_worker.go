@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -28,13 +29,27 @@ func sendEmail(to string, subject string, body string) {
 // StartUserWorker 監聽 RabbitMQ
 func StartUserWorker() {
 	config.InitRabbitMQ()
+	defer config.CloseRabbitMQ()
 
-	msgs, err := config.RabbitChannel.Consume("user_created", "", true, false, false, false, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	msgs, err := config.RabbitChannel.ConsumeWithContext(
+		ctx,
+		"user_created",
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		log.Fatal("❌ 訂閱 Queue 失敗:", err)
 	}
 
 	log.Println("🚀 `user_worker` 開始監聽 user_created 事件...")
+
 	for msg := range msgs {
 		var user models.User
 		err := json.Unmarshal(msg.Body, &user)
