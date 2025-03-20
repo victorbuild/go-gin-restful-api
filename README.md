@@ -2,6 +2,20 @@
 
 基於 Golang + Gin 架構的 RESTful API，包含 JWT 驗證、CRUD 操作、資料庫連接（PostgreSQL）、Kafka，主要以 user 資源為主，包含註冊、登入、`admin` 有 CRUD 會員 user 的權限。
 
+## 使用技術
+
+| 類別        | 技術與框架                |
+|-----------|----------------------|
+| **後端框架**  | Golang（Gin）          |
+| **身分驗證**  | JWT                  |
+| **資料庫**   | PostgreSQL（GORM ORM） |
+| **快取機制**  | Redis                |
+| **QUEUE** | Kafka、RabbitMQ       |
+| **EMAIL** | SMTP                 |
+| **日誌管理**  | ELK                  |
+| **測試工具**  | K6（壓力測試）             |
+
+
 ## 快速開始
 
 ### 安裝 Go
@@ -70,4 +84,12 @@ go-gin-restful-api/
 │── go.mod            # Go Module
 │── go.sum            # 依賴鎖定檔 類似 PHP composer.lock
 │── main.go
+```
+
+## 測試
+
+執行壓力測試（K6），請確認是否安裝 K6
+
+```sh
+k6 run tests/load_test.js
 ```
