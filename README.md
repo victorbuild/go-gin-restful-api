@@ -87,6 +87,11 @@ go-gin-restful-api/
 │── go.mod            # Go Module
 │── go.sum            # 依賴鎖定檔 類似 PHP composer.lock
 │── main.go
+│── 
+│── prometheus.yml    # Prometheus 監控設定
+│── 
+
+
 ```
 
 ## 測試
