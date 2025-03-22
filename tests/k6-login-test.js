@@ -8,8 +8,8 @@ export let options = {
 
 export default function () {
     let payload = JSON.stringify({
-        email: "***REMOVED***",
-        password: "***REMOVED***123"
+        email: "example@example.com",
+        password: "example@example.com123"
     });
 
     let params = {
