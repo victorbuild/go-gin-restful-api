@@ -17,18 +17,19 @@ var (
 )
 
 type User struct {
-	ID       uint   `gorm:"primaryKey" json:"id"` // 改為 uint，並標記為主鍵
+	ID       uint   `gorm:"primaryKey" json:"id"`
 	Name     string `gorm:"size:255" json:"name"`
 	Password string `gorm:"size:255" json:"password"`
 	Email    string `gorm:"uniqueIndex;size:255" json:"email"`
 	Role     string `gorm:"size:255" json:"role"`
 }
 
+// UpdateUserInput 用於更新註冊
 type UpdateUserInput struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
-}
+	Name     string `json:"name" example:"Victor"`              // 姓名
+	Password string `json:"password" example:"123456"`          // 密碼
+	Email    string `json:"email" example:"victor@example.com"` // email
+} // @name RegisterUserInput
 
 func FindByUserId(userId int) (User, error) {
 	var user User

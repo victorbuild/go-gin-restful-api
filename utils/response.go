@@ -24,11 +24,20 @@ type MetaData struct {
 
 // APIResponse 定義標準 API 回應結構
 type APIResponse struct {
-	Status    string      `json:"status"`
-	Message   string      `json:"message"`
-	Data      interface{} `json:"data,omitempty"`
-	ErrorCode int         `json:"error_code,omitempty"`
-	Meta      MetaData    `json:"meta"`
+	// 狀態: "success" 或 "error"
+	Status string `json:"status" example:"success"`
+
+	// 訊息描述
+	Message string `json:"message" example:"User created successfully"`
+
+	// 主要的回應數據 (可省略)
+	Data interface{} `json:"data,omitempty"`
+
+	// 錯誤代碼 (成功時省略)
+	ErrorCode int `json:"error_code,omitempty" example:"1001"`
+
+	// Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
 }
 
 // 產生 MetaData
@@ -39,7 +48,7 @@ func generateMetaData() MetaData {
 	}
 }
 
-// 成功回應（單筆資料）
+// SuccessResponse 成功回應（單筆資料）
 func SuccessResponse(c *gin.Context, message string, data interface{}) {
 	response := APIResponse{
 		Status:  "success",
@@ -50,7 +59,7 @@ func SuccessResponse(c *gin.Context, message string, data interface{}) {
 	c.JSON(http.StatusOK, response)
 }
 
-// 成功回應（列表 + 分頁）
+// ListResponse 成功回應（列表 + 分頁）
 func ListResponse(c *gin.Context, message string, items interface{}, pagination Pagination) {
 	response := APIResponse{
 		Status:  "success",
@@ -64,7 +73,7 @@ func ListResponse(c *gin.Context, message string, items interface{}, pagination 
 	c.JSON(http.StatusOK, response)
 }
 
-// 失敗回應
+// ErrorResponse 失敗回應
 func ErrorResponse(c *gin.Context, statusCode int, message string, errorCode int) {
 	response := APIResponse{
 		Status:    "error",

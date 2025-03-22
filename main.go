@@ -1,5 +1,12 @@
 package main
 
+// @title Go RESTful API Example
+// @version 1.0
+// @description 這是一個示範用的 API，包含 Kafka、JWT、RabbitMQ、Prometheus、Swagger 文件。
+// @contact.name Victor
+// @contact.email victor@email.com
+// @host localhost:8000
+// @BasePath /v1
 import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,6 +21,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
+	_ "restfulapi/docs"
 )
 
 var (
@@ -64,7 +74,7 @@ func main() {
 
 	// 初始化 Gin 路由
 	r := gin.Default()
-
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// 加入 Prometheus `/metrics` 端點
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 

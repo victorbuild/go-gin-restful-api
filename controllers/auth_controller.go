@@ -14,6 +14,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterUser
+// @Summary 會員註冊
+// @Description 註冊新使用者
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   user  body models.UpdateUserInput  true  "使用者資訊"
+// @Success 200 {object} utils.APIResponse "請求成功，回傳成功的 APIResponse"
+// @Failure 409 {object} utils.APIResponse "Email 已經被註冊"
+// @Failure 500 {object} utils.APIResponse "伺服器錯誤"
+// @Router /auth/register [post]
 func RegisterUser(c *gin.Context) {
 	user := models.User{}
 	err := c.BindJSON(&user)
