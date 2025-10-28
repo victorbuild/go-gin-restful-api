@@ -14,16 +14,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterUserInput 定義註冊使用者輸入結構
+type RegisterUserInput struct {
+	Name     string `json:"name" example:"Victor" binding:"required"`                    // 姓名
+	Email    string `json:"email" example:"victor@example.com" binding:"required,email"` // Email
+	Password string `json:"password" example:"123456" binding:"required"`                // 密碼
+}
+
+// RegisterUserResponse 定義註冊成功回傳的資料結構
+type RegisterUserResponse struct {
+	ID    uint   `json:"id" example:"18"`                    // 使用者 ID
+	Name  string `json:"name" example:"Victor"`              // 姓名
+	Email string `json:"email" example:"victor@example.com"` // Email
+}
+
 // RegisterUser
 // @Summary 會員註冊
 // @Description 註冊新使用者
 // @Tags Auth
 // @Accept  json
 // @Produce  json
-// @Param   user  body models.UpdateUserInput  true  "使用者資訊"
-// @Success 200 {object} utils.APIResponse "請求成功，回傳成功的 APIResponse"
-// @Failure 409 {object} utils.APIResponse "Email 已經被註冊"
-// @Failure 500 {object} utils.APIResponse "伺服器錯誤"
+// @Param   user  body RegisterUserInput  true  "使用者資訊"
+// @Success 201 {object} utils.SuccessAPIResponse{data=RegisterUserResponse} "註冊成功，回傳使用者資訊"
+// @Failure 400 {object} utils.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1001"
+// @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1002"
 // @Router /auth/register [post]
 func RegisterUser(c *gin.Context) {
 	user := models.User{}
@@ -35,6 +49,12 @@ func RegisterUser(c *gin.Context) {
 
 	// 強制設定 role 為 "user"，防止惡意註冊成 admin
 	user.Role = "user"
+
+	// 驗證必填欄位
+	if user.Name == "" || user.Email == "" || user.Password == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Missing required fields", utils.ErrMissingRequiredFields)
+		return
+	}
 
 	createUserId, createUserErr := models.CreateUser(user)
 
@@ -78,7 +98,7 @@ func RegisterUser(c *gin.Context) {
 	log.Println("✅ 註冊成功，已發送 user_created 事件:", string(message))
 
 	// **回應標準 JSON**
-	utils.SuccessResponse(c, "User created successfully", gin.H{
+	utils.CreatedResponse(c, "User created successfully", gin.H{
 		"id":    user.ID,
 		"name":  user.Name,
 		"email": user.Email,

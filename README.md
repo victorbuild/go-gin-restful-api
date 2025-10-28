@@ -111,6 +111,66 @@ go-gin-restful-api/
 
 ```
 
+## 系統架構
+
+### 註冊流程
+
+當使用者註冊成功時，系統採用**事件驅動架構**與**訊息佇列**來處理非同步任務（如發送 Email），避免阻塞 API 回應：
+
+```mermaid
+sequenceDiagram
+    participant User as 使用者
+    participant API as API Server
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ
+    participant Worker as User Worker
+    participant SMTP as Email Service
+
+    User->>API: POST /v1/auth/register
+    API->>API: 驗證必填欄位
+    API->>DB: 檢查 Email 是否重複
+    API->>DB: 建立使用者 (Hash 密碼)
+    DB-->>API: 返回 User ID
+    
+    API->>MQ: 發送 "user_created" 事件
+    API-->>User: HTTP 201 Created
+    
+    Worker->>MQ: 監聽 "user_created" queue
+    MQ-->>Worker: 接收事件訊息
+    Worker->>Worker: 解析使用者資訊
+    
+    Worker->>SMTP: 發送歡迎 Email
+    alt Email 發送成功
+        SMTP-->>Worker: 成功
+        Worker->>Worker: 記錄成功日誌
+    else Email 發送失敗
+        SMTP-->>Worker: 認證錯誤/網路錯誤
+        Worker->>Worker: 記錄錯誤日誌
+    end
+```
+
+### 核心架構特色
+
+#### 1. **訊息佇列（RabbitMQ）**
+- **Queue**: `user_created` - 用於使用者註冊事件
+- **Worker**: 後台非同步處理任務
+- **優點**: 解耦前端回應與後台任務，提升系統效能
+
+#### 2. **事件驅動設計**
+- Controller 僅負責即時回應
+- Worker 後台處理非同步任務
+- 支援水平擴展 Worker
+
+#### 3. **容錯與日誌記錄**
+- Email 發送失敗時記錄錯誤到系統日誌（包括認證錯誤、網路錯誤）
+- API 所有請求都會記錄到 Kafka（含請求方法、路徑、狀態碼、延遲）
+- 完整的錯誤處理機制
+
+#### 4. **監控系統**
+- **Prometheus**: 收集 API 指標（請求數量、延遲）
+- **Grafana**: 視覺化監控儀表板
+- **Health Check**: `/health` 健康檢查端點
+
 ## 測試
 
 執行壓力測試（K6），請確認是否安裝 K6
