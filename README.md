@@ -12,7 +12,7 @@
 | **身分驗證**  | JWT                  |
 | **資料庫**   | PostgreSQL（GORM ORM） |
 | **快取機制**  | Redis                |
-| **QUEUE** | Kafka、RabbitMQ       |
+| **訊息佇列** | RabbitMQ (異步任務)、Kafka (日誌)       |
 | **EMAIL** | SMTP                 |
 | **日誌管理**  | ELK                  |
 | **監測工具**  | Prometheus、Grafana   |
@@ -163,7 +163,8 @@ sequenceDiagram
 
 #### 3. **容錯與日誌記錄**
 - Email 發送失敗時記錄錯誤到系統日誌（包括認證錯誤、網路錯誤）
-- API 所有請求都會記錄到 Kafka（含請求方法、路徑、狀態碼、延遲）
+- **Kafka**: 記錄所有 API 請求日誌（含請求方法、路徑、狀態碼、延遲）
+- **RabbitMQ**: 處理非同步任務（使用者註冊 Email）
 - 完整的錯誤處理機制
 
 #### 4. **監控系統**
