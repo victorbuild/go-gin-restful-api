@@ -9,8 +9,6 @@ package main
 // @BasePath /v1
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"restfulapi/config"
 	"restfulapi/database"
 	"restfulapi/middlewares"
@@ -19,11 +17,15 @@ import (
 	adminRoutes "restfulapi/routers/admin"
 	"restfulapi/workers"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	_ "restfulapi/docs"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
-	_ "restfulapi/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 var (
@@ -74,8 +76,14 @@ func main() {
 
 	// 初始化 Gin 路由
 	r := gin.Default()
+
+	// 設定健康檢查路由（根目錄和 /health）
+	routers.SetupHealthRoutes(r)
+
+	// Swagger 文件
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	// 加入 Prometheus `/metrics` 端點
+
+	// Prometheus metrics
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// **加入 Logger Middleware，確保所有請求都記錄到 Kafka**
