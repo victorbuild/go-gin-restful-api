@@ -30,13 +30,30 @@
 go mod tidy
 ```
 
+### 產生 Swagger 文檔
+
+**第一次使用或更新 API 註解後，需要使用指令產生 Swagger 文檔：**
+
+```bash
+go run github.com/swaggo/swag/cmd/swag@latest init
+```
+
+這將會在 `docs/` 目錄下產生 swagger.json、swagger.yaml 和 docs.go 檔案。
+
+
 ### 啟動專案
 
 執行以下指令
 
-```
+```bash
 go run . 
 ```
+
+啟動後，可以透過以下網址訪問 API 文檔：
+
+- Swagger UI: http://localhost:8000/swagger/index.html
+- Prometheus Metrics: http://localhost:8000/metrics
+- 健康檢查: http://localhost:8000/health
 
 ## 專案結構
 
