@@ -105,6 +105,22 @@ type ErrorAPIResponseEmailExists struct {
 	Meta MetaData `json:"meta"`
 }
 
+// ErrorAPIResponseInvalidInput 定義 400 無效輸入錯誤回應結構
+// @Description 無效的輸入格式（JSON 格式錯誤）錯誤回應
+type ErrorAPIResponseInvalidInput struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Invalid input"`
+
+	// ErrorCode 錯誤代碼: 1001
+	ErrorCode int `json:"error_code" example:"1001" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
 // ErrorAPIResponseMissingFields 定義 400 缺少必填欄位錯誤回應結構
 // @Description 缺少必填欄位錯誤回應
 type ErrorAPIResponseMissingFields struct {
@@ -116,6 +132,22 @@ type ErrorAPIResponseMissingFields struct {
 
 	// ErrorCode 錯誤代碼: 1002
 	ErrorCode int `json:"error_code" example:"1002" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
+// ErrorAPIResponseInvalidCredentials 定義 401 帳號密碼錯誤回應結構
+// @Description 帳號或密碼錯誤回應
+type ErrorAPIResponseInvalidCredentials struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Invalid email or password"`
+
+	// ErrorCode 錯誤代碼: 1004
+	ErrorCode int `json:"error_code" example:"1004" swaggertype:"integer"`
 
 	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
 	Meta MetaData `json:"meta"`

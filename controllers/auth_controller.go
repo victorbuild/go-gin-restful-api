@@ -29,6 +29,18 @@ type RegisterUserResponse struct {
 	Email string `json:"email" example:"victor@example.com"` // Email
 }
 
+// LoginUserInput 定義登入使用者輸入結構
+type LoginUserInput struct {
+	Email    string `json:"email" example:"victor@example.com" binding:"required,email"` // Email
+	Password string `json:"password" example:"123456" binding:"required"`                // 密碼
+}
+
+// LoginUserResponse 定義登入成功回傳的資料結構
+type LoginUserResponse struct {
+	AccessToken  string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`  // Access Token
+	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // Refresh Token
+}
+
 // RegisterUser
 // @Summary 會員註冊
 // @Description 註冊新使用者
@@ -37,6 +49,7 @@ type RegisterUserResponse struct {
 // @Produce  json
 // @Param   user  body RegisterUserInput  true  "使用者資訊"
 // @Success 201 {object} utils.SuccessAPIResponse{data=RegisterUserResponse} "註冊成功，回傳使用者資訊"
+// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
 // @Failure 400 {object} utils.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1002"
 // @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1003"
 // @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
@@ -117,6 +130,19 @@ func RegisterUser(c *gin.Context) {
 	})
 }
 
+// LoginUser
+// @Summary 使用者登入
+// @Description 使用者登入並取得 Access Token 和 Refresh Token
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   credentials  body LoginUserInput  true  "登入憑證"
+// @Success 200 {object} utils.SuccessAPIResponse{data=LoginUserResponse} "登入成功，回傳 Access Token 和 Refresh Token"
+// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 401 {object} utils.ErrorAPIResponseInvalidCredentials "帳號或密碼錯誤，error_code: 1004"
+// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
+// @Router /auth/login [post]
 func LoginUser(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
@@ -125,10 +151,7 @@ func LoginUser(c *gin.Context) {
 		return
 	}
 
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var input LoginUserInput
 
 	// 解析請求 JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -138,7 +161,20 @@ func LoginUser(c *gin.Context) {
 
 	// 查詢使用者
 	var user models.User
-	db.DbConnect.Where("email = ?", input.Email).First(&user)
+	result := db.DbConnect.Where("email = ?", input.Email).First(&user)
+
+	// 檢查使用者是否存在
+	if result.RowsAffected == 0 {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.ErrInvalidCredentials)
+		return
+	}
+
+	// 檢查資料庫查詢錯誤（使用者存在但查詢過程發生其他錯誤）
+	if result.Error != nil {
+		logger.LogError("login", result.Error)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to login", utils.ErrDatabaseError)
+		return
+	}
 
 	// 檢查密碼
 	if !user.CheckPassword(input.Password) {
@@ -149,6 +185,7 @@ func LoginUser(c *gin.Context) {
 	// 產生 Access Token & Refresh Token
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, user.Email, user.Role)
 	if err != nil {
+		logger.LogError("login", err)
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.ErrTokenGenerationFailed)
 		return
 	}
