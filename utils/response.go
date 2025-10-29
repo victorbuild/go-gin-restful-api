@@ -153,6 +153,38 @@ type ErrorAPIResponseInvalidCredentials struct {
 	Meta MetaData `json:"meta"`
 }
 
+// ErrorAPIResponseTokenMissing 定義 401 Token 缺失錯誤回應結構
+// @Description Token 缺失錯誤回應
+type ErrorAPIResponseTokenMissing struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Unauthorized"`
+
+	// ErrorCode 錯誤代碼: 1006
+	ErrorCode int `json:"error_code" example:"1006" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
+// ErrorAPIResponseTokenInvalid 定義 401 Token 無效錯誤回應結構
+// @Description Token 無效或過期錯誤回應
+type ErrorAPIResponseTokenInvalid struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Invalid token"`
+
+	// ErrorCode 錯誤代碼: 1007
+	ErrorCode int `json:"error_code" example:"1007" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
 // ErrorAPIResponseInternalServerError 定義 500 伺服器內部錯誤回應結構
 // @Description 伺服器內部錯誤回應
 type ErrorAPIResponseInternalServerError struct {

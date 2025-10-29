@@ -15,7 +15,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", 1006)
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", utils.ErrTokenMissing)
 			c.Abort()
 			return
 		}
@@ -23,7 +23,7 @@ func RequireAuth() gin.HandlerFunc {
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 		token, err := config.ValidateToken(tokenString, config.JWTConfig.AccessTokenSecret)
 		if err != nil || !token.Valid {
-			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid token", 1007)
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid token", utils.ErrTokenInvalid)
 			c.Abort()
 			return
 		}

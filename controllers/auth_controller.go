@@ -41,6 +41,25 @@ type LoginUserResponse struct {
 	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // Refresh Token
 }
 
+// LogoutUserResponse 定義登出成功回傳的資料結構（空對象）
+type LogoutUserResponse struct {
+}
+
+// LogoutSuccessResponse 定義登出成功回應結構
+type LogoutSuccessResponse struct {
+	// Status 狀態: "success"
+	Status string `json:"status" example:"success"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Logout successful"`
+
+	// Data 主要的回應數據（空對象）
+	Data LogoutUserResponse `json:"data"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta utils.MetaData `json:"meta"`
+}
+
 // RegisterUser
 // @Summary 會員註冊
 // @Description 註冊新使用者
@@ -136,7 +155,7 @@ func RegisterUser(c *gin.Context) {
 // @Tags Auth
 // @Accept  json
 // @Produce  json
-// @Param   credentials  body LoginUserInput  true  "登入憑證"
+// @Param   credentials  body LoginUserInput  true  "登入資訊"
 // @Success 200 {object} utils.SuccessAPIResponse{data=LoginUserResponse} "登入成功，回傳 Access Token 和 Refresh Token"
 // @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
 // @Failure 401 {object} utils.ErrorAPIResponseInvalidCredentials "帳號或密碼錯誤，error_code: 1004"
@@ -197,8 +216,20 @@ func LoginUser(c *gin.Context) {
 	})
 }
 
-// LogoutUser - 使用者登出（JWT 無狀態登出）
+// LogoutUser
+// @Summary 使用者登出
+// @Description 使用者登出，前端需移除本地儲存的 Token（JWT 無狀態登出）
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} LogoutSuccessResponse "登出成功"
+// @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Token 缺失，error_code: 1006"
+// @Failure 401 {object} utils.ErrorAPIResponseTokenInvalid "Token 無效或過期，error_code: 1007"
+// @Router /auth/logout [post]
 func LogoutUser(c *gin.Context) {
-	// 只需要回應成功，前端會移除 Token
+	// TODO: 實作 Token 黑名單機制
+	// JWT 無狀態登出：目前只需回應成功，前端會移除本地儲存的 Token
+	// 注意：目前 Token 在過期前仍有效，實作黑名單後可立即失效
 	utils.SuccessResponse(c, "Logout successful", gin.H{})
 }

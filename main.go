@@ -7,6 +7,10 @@ package main
 // @contact.email victor@email.com
 // @host localhost:8000
 // @BasePath /v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description 輸入 "Bearer {token}" 進行身份驗證。可以在登入 API 取得 Token。
 import (
 	"fmt"
 	"restfulapi/config"

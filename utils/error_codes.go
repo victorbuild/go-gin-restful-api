@@ -8,6 +8,8 @@ const (
 	ErrEmailExists           = 1003 // Email 已存在
 	ErrInvalidCredentials    = 1004 // 帳號密碼錯誤
 	ErrTokenGenerationFailed = 1005 // Token 產生失敗
+	ErrTokenMissing          = 1006 // Token 缺失
+	ErrTokenInvalid          = 1007 // Token 無效或過期
 
 	// Server 錯誤碼（4000-4999）
 	ErrInternalError    = 4001 // 伺服器內部錯誤
