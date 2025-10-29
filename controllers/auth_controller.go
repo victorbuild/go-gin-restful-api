@@ -10,6 +10,7 @@ import (
 	"restfulapi/models"
 	"restfulapi/pkg/logger"
 	"restfulapi/utils"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,10 +37,19 @@ type RegisterUserResponse struct {
 // @Produce  json
 // @Param   user  body RegisterUserInput  true  "使用者資訊"
 // @Success 201 {object} utils.SuccessAPIResponse{data=RegisterUserResponse} "註冊成功，回傳使用者資訊"
-// @Failure 400 {object} utils.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1001"
-// @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1002"
+// @Failure 400 {object} utils.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1002"
+// @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1003"
+// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /auth/register [post]
 func RegisterUser(c *gin.Context) {
+	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		return
+	}
+
 	user := models.User{}
 	err := c.BindJSON(&user)
 	if err != nil {
@@ -47,14 +57,14 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	// 強制設定 role 為 "user"，防止惡意註冊成 admin
-	user.Role = "user"
-
 	// 驗證必填欄位
 	if user.Name == "" || user.Email == "" || user.Password == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Missing required fields", utils.ErrMissingRequiredFields)
 		return
 	}
+
+	// 強制設定 role 為 "user"，防止惡意註冊成 admin
+	user.Role = "user"
 
 	createUserId, createUserErr := models.CreateUser(user)
 
@@ -63,11 +73,13 @@ func RegisterUser(c *gin.Context) {
 		case errors.Is(createUserErr, models.ErrEmailExists):
 			utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.ErrEmailExists)
 		case errors.Is(createUserErr, models.ErrPasswordHashFail):
+			logger.LogError("register", createUserErr)
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrPasswordHashFail)
 		case errors.Is(createUserErr, models.ErrDatabaseError):
 			logger.LogError("register", createUserErr)
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrDatabaseError)
 		default:
+			logger.LogError("register", createUserErr)
 			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrInternalError)
 		}
 		return
@@ -75,7 +87,7 @@ func RegisterUser(c *gin.Context) {
 
 	user.ID = createUserId
 
-	// **定義 RabbitMQ 訊息結構（不包含密碼）**
+	// 定義 RabbitMQ 訊息結構（不包含密碼）
 	type UserCreatedMessage struct {
 		ID    uint   `json:"id"`
 		Name  string `json:"name"`
@@ -91,13 +103,13 @@ func RegisterUser(c *gin.Context) {
 		Role:  user.Role,
 	}
 
-	// **發送 RabbitMQ 事件**
+	// 發送 RabbitMQ 事件
 	message, _ := json.Marshal(messageData)
 	config.PublishMessage("user_created", string(message))
 
-	log.Println("✅ 註冊成功，已發送 user_created 事件:", string(message))
+	log.Println("註冊成功，已發送 user_created 事件:", string(message))
 
-	// **回應標準 JSON**
+	// 回應標準 JSON
 	utils.CreatedResponse(c, "User created successfully", gin.H{
 		"id":    user.ID,
 		"name":  user.Name,
@@ -106,6 +118,13 @@ func RegisterUser(c *gin.Context) {
 }
 
 func LoginUser(c *gin.Context) {
+	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		return
+	}
+
 	var input struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`

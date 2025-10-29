@@ -36,7 +36,7 @@ type APIResponse struct {
 	Data interface{} `json:"data,omitempty"`
 
 	// 錯誤代碼 (成功時省略)
-	ErrorCode int `json:"error_code,omitempty" example:"1001"`
+	ErrorCode int `json:"error_code,omitempty" example:"1000"`
 
 	// Meta 資訊 (例如 API 版本、請求 ID 等)
 	Meta MetaData `json:"meta"`
@@ -73,6 +73,22 @@ type ErrorAPIResponse struct {
 	Meta MetaData `json:"meta"`
 }
 
+// ErrorAPIResponseUnsupportedMediaType 定義 415 不支援媒體類型錯誤回應結構
+// @Description 不支援的媒體類型錯誤回應
+type ErrorAPIResponseUnsupportedMediaType struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Unsupported media type. Expected application/json"`
+
+	// ErrorCode 錯誤代碼: 1000
+	ErrorCode int `json:"error_code" example:"1000" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
 // ErrorAPIResponseEmailExists 定義 409 Email 重複錯誤回應結構
 // @Description Email 已經被註冊錯誤回應
 type ErrorAPIResponseEmailExists struct {
@@ -82,8 +98,8 @@ type ErrorAPIResponseEmailExists struct {
 	// Message 訊息描述
 	Message string `json:"message" example:"Email already registered"`
 
-	// ErrorCode 錯誤代碼: 1002
-	ErrorCode int `json:"error_code" example:"1002" swaggertype:"integer"`
+	// ErrorCode 錯誤代碼: 1003
+	ErrorCode int `json:"error_code" example:"1003" swaggertype:"integer"`
 
 	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
 	Meta MetaData `json:"meta"`
@@ -98,8 +114,24 @@ type ErrorAPIResponseMissingFields struct {
 	// Message 訊息描述
 	Message string `json:"message" example:"Missing required fields"`
 
-	// ErrorCode 錯誤代碼: 1001
-	ErrorCode int `json:"error_code" example:"1001" swaggertype:"integer"`
+	// ErrorCode 錯誤代碼: 1002
+	ErrorCode int `json:"error_code" example:"1002" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
+// ErrorAPIResponseInternalServerError 定義 500 伺服器內部錯誤回應結構
+// @Description 伺服器內部錯誤回應
+type ErrorAPIResponseInternalServerError struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Failed to create user"`
+
+	// ErrorCode 錯誤代碼: 4001
+	ErrorCode int `json:"error_code" example:"4001" swaggertype:"integer"`
 
 	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
 	Meta MetaData `json:"meta"`
