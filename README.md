@@ -172,10 +172,22 @@ sequenceDiagram
 - **Grafana**: 視覺化監控儀表板
 - **Health Check**: `/health` 健康檢查端點
 
-## 測試
+## 執行壓力測試
 
-執行壓力測試（K6），請確認是否安裝 K6
+使用 K6 進行 API 壓力測試，請確認是否已安裝 K6：
 
-```sh
-k6 run tests/load_test.js
+**安裝 K6（如未安裝）：**
+```bash
+# macOS
+brew install k6
 ```
+
+**執行登入 API 壓力測試：**
+```bash
+k6 run tests/k6-login-test.js
+```
+
+**測試配置說明：**
+- 測試會從 50 個虛擬用戶逐步增加到 200 個用戶
+- 總測試時間約 60 秒
+- 成功標準：95% 的請求需在 500ms 內完成，錯誤率低於 1%
