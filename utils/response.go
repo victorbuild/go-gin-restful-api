@@ -185,6 +185,22 @@ type ErrorAPIResponseTokenInvalid struct {
 	Meta MetaData `json:"meta"`
 }
 
+// ErrorAPIResponseRefreshTokenInvalid 定義 401 Refresh Token 無效錯誤回應結構
+// @Description Refresh Token 無效或過期錯誤回應
+type ErrorAPIResponseRefreshTokenInvalid struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Invalid or expired refresh token"`
+
+	// ErrorCode 錯誤代碼: 1008
+	ErrorCode int `json:"error_code" example:"1008" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
 // ErrorAPIResponseInternalServerError 定義 500 伺服器內部錯誤回應結構
 // @Description 伺服器內部錯誤回應
 type ErrorAPIResponseInternalServerError struct {

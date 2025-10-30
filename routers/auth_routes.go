@@ -12,5 +12,6 @@ func SetupAuthRoutes(r *gin.RouterGroup) {
 	auth := r.Group("/auth")
 	auth.POST("/register", controllers.RegisterUser)
 	auth.POST("/login", controllers.LoginUser)
+	auth.POST("/refresh", controllers.RefreshToken)
 	auth.POST("/logout", middlewares.RequireAuth(), controllers.LogoutUser)
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -11,8 +12,10 @@ import (
 	"restfulapi/pkg/logger"
 	"restfulapi/utils"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // RegisterUserInput 定義註冊使用者輸入結構
@@ -58,6 +61,16 @@ type LogoutSuccessResponse struct {
 
 	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
 	Meta utils.MetaData `json:"meta"`
+}
+
+// RefreshTokenInput 定義刷新 Token 輸入結構
+type RefreshTokenInput struct {
+	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." binding:"required"` // Refresh Token
+}
+
+// LogoutInput 定義登出輸入結構（可選的 Refresh Token）
+type LogoutInput struct {
+	RefreshToken string `json:"refresh_token,omitempty" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // Refresh Token（可選，如果有就註銷）
 }
 
 // RegisterUser
@@ -216,20 +229,182 @@ func LoginUser(c *gin.Context) {
 	})
 }
 
+// RefreshToken
+// @Summary 刷新 Access Token
+// @Description 使用 Refresh Token 來刷新 Access Token 和 Refresh Token
+// @Tags Auth
+// @Accept  json
+// @Produce  json
+// @Param   refresh_token  body RefreshTokenInput  true  "Refresh Token"
+// @Success 200 {object} utils.SuccessAPIResponse{data=LoginUserResponse} "刷新成功，回傳新的 Access Token 和 Refresh Token"
+// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 401 {object} utils.ErrorAPIResponseRefreshTokenInvalid "Refresh Token 無效或過期，error_code: 1008"
+// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
+// @Router /auth/refresh [post]
+func RefreshToken(c *gin.Context) {
+	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		return
+	}
+
+	var input RefreshTokenInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.ErrInvalidInput)
+		return
+	}
+
+	// 檢查 Redis 是否已經黑名單（登出或rotation 放入的）
+	ctx := context.Background()
+	refreshTokenBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
+	exists, err := config.RedisClient.Exists(ctx, refreshTokenBlacklistKey).Result()
+	if err == nil && exists > 0 {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token has been revoked", utils.ErrRefreshTokenInvalid)
+		return
+	}
+
+	token, err := config.ValidateToken(input.RefreshToken, config.JWTConfig.RefreshTokenSecret)
+	if err != nil || !token.Valid {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.ErrRefreshTokenInvalid)
+		return
+	}
+
+	// 提取 exp，進行 Rotation，本次 refresh token 立即失效（寫入黑名單）
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		logger.LogError("refresh", errors.New("failed to parse token claims"))
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		return
+	}
+
+	refreshExp, ok := claims["exp"].(float64)
+	if !ok {
+		logger.LogError("refresh", errors.New("no exp in refresh token"))
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		return
+	}
+	refreshExpTime := time.Unix(int64(refreshExp), 0)
+	refreshRemainingTime := time.Until(refreshExpTime)
+	if refreshRemainingTime > 0 {
+		// Rotation: 用過即失效
+		err := config.RedisClient.Set(ctx, refreshTokenBlacklistKey, "1", refreshRemainingTime).Err()
+		if err != nil {
+			logger.LogError("refresh-rotation", err)
+		}
+	}
+
+	// 從 Token 中提取使用者資訊
+	userID, ok := claims["sub"].(float64)
+	if !ok {
+		logger.LogError("refresh", errors.New("invalid user ID in token"))
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		logger.LogError("refresh", errors.New("invalid email in token"))
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		return
+	}
+
+	// 查詢使用者以獲取 role
+	var user models.User
+	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
+	if result.RowsAffected == 0 {
+		logger.LogError("refresh", errors.New("user not found"))
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.ErrRefreshTokenInvalid)
+		return
+	}
+
+	if result.Error != nil {
+		logger.LogError("refresh", result.Error)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrDatabaseError)
+		return
+	}
+
+	// 產生新的 Access Token & Refresh Token
+	accessToken, refreshToken, err := config.GenerateTokens(user.ID, email, user.Role)
+	if err != nil {
+		logger.LogError("refresh", err)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.ErrTokenGenerationFailed)
+		return
+	}
+
+	// 回應標準 JSON
+	utils.SuccessResponse(c, "Token refreshed successfully", gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+}
+
 // LogoutUser
 // @Summary 使用者登出
-// @Description 使用者登出，前端需移除本地儲存的 Token（JWT 無狀態登出）
+// @Description 使用者登出，將 Access Token 加入黑名單使其立即失效。如果提供了 Refresh Token，也會一併註銷。
 // @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Security BearerAuth
+// @Param   refresh_token  body LogoutInput false "Refresh Token（可選，如果有就一併註銷）"
 // @Success 200 {object} LogoutSuccessResponse "登出成功"
+// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Token 缺失，error_code: 1006"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenInvalid "Token 無效或過期，error_code: 1007"
 // @Router /auth/logout [post]
 func LogoutUser(c *gin.Context) {
-	// TODO: 實作 Token 黑名單機制
-	// JWT 無狀態登出：目前只需回應成功，前端會移除本地儲存的 Token
-	// 注意：目前 Token 在過期前仍有效，實作黑名單後可立即失效
+	// 從 Header 中提取 Access Token（可能缺/過期/無效，仍然繼續流程）
+	tokenString := c.GetHeader("Authorization")
+	if tokenString != "" {
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+		// 嘗試驗證 Token 並解析 Claims 以取得過期時間（即使無效也不提前 return，僅能做黑名單的做黑名單）
+		token, err := config.ValidateToken(tokenString, config.JWTConfig.AccessTokenSecret)
+		if err == nil && token.Valid {
+			ctx := context.Background()
+			claims, ok := token.Claims.(jwt.MapClaims)
+			if ok {
+				exp, ok := claims["exp"].(float64)
+				if ok {
+					expTime := time.Unix(int64(exp), 0)
+					remainingTime := time.Until(expTime)
+					if remainingTime > 0 {
+						blacklistKey := "access_token:blacklist:" + tokenString
+						err := config.RedisClient.Set(ctx, blacklistKey, "1", remainingTime).Err()
+						if err != nil {
+							logger.LogError("logout", err)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 不論 access token 狀態如何，皆可處理 Refresh Token
+	var input LogoutInput
+	if err := c.ShouldBindJSON(&input); err == nil && input.RefreshToken != "" {
+		refreshToken, err := config.ValidateToken(input.RefreshToken, config.JWTConfig.RefreshTokenSecret)
+		if err == nil && refreshToken.Valid {
+			ctx := context.Background()
+			refreshClaims, ok := refreshToken.Claims.(jwt.MapClaims)
+			if ok {
+				refreshExp, ok := refreshClaims["exp"].(float64)
+				if ok {
+					refreshExpTime := time.Unix(int64(refreshExp), 0)
+					refreshRemainingTime := time.Until(refreshExpTime)
+					if refreshRemainingTime > 0 {
+						refreshBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
+						err := config.RedisClient.Set(ctx, refreshBlacklistKey, "1", refreshRemainingTime).Err()
+						if err != nil {
+							logger.LogError("logout", err)
+						}
+					}
+				}
+			}
+		}
+		// 即使 Refresh Token 無效，也不影響登出流程（因為可能過期或被清除了）
+	}
+
 	utils.SuccessResponse(c, "Logout successful", gin.H{})
 }
