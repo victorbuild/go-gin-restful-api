@@ -17,12 +17,42 @@ import (
 )
 
 // FindAllUsers - 取得所有使用者
+// @Summary 取得使用者列表
+// @Description 取得所有使用者資料（需管理員權限）
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.SuccessAPIResponse "成功取得使用者列表"
+// @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Unauthorized，error_code: 1006"
+// @Router /v1/admin/users [get]
 func FindAllUsers(c *gin.Context) {
 	userRepo := repository.NewUserRepository()
 	userService := service.NewUserService(userRepo)
 	users := userService.GetAllUsers()
 
-	utils.SuccessResponse(c, "All users retrieved successfully", gin.H{"items": users})
+	// 以 DTO struct 確保欄位順序
+	type AdminUserListItem struct {
+		ID    uint   `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Role  string `json:"role"`
+	}
+	items := make([]AdminUserListItem, 0, len(users))
+	for _, u := range users {
+		items = append(items, AdminUserListItem{
+			ID:    u.ID,
+			Name:  u.Name,
+			Email: u.Email,
+			Role:  u.Role,
+		})
+	}
+
+	// 用包裝 struct，而非 map，避免 key 順序隨機
+	type AdminUserListResponse struct {
+		Items []AdminUserListItem `json:"items"`
+	}
+
+	utils.SuccessResponse(c, "All users retrieved successfully", AdminUserListResponse{Items: items})
 }
 
 // FindByUserId - 取得單一使用者
