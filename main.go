@@ -6,7 +6,7 @@ package main
 // @contact.name Victor
 // @contact.email victor@email.com
 // @host localhost:8000
-// @BasePath /v1
+// @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

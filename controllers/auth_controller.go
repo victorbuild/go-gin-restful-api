@@ -86,7 +86,7 @@ type LogoutInput struct {
 // @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1003"
 // @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
-// @Router /auth/register [post]
+// @Router /v1/auth/register [post]
 func RegisterUser(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
@@ -174,7 +174,7 @@ func RegisterUser(c *gin.Context) {
 // @Failure 401 {object} utils.ErrorAPIResponseInvalidCredentials "帳號或密碼錯誤，error_code: 1004"
 // @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
-// @Router /auth/login [post]
+// @Router /v1/auth/login [post]
 func LoginUser(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
@@ -241,7 +241,7 @@ func LoginUser(c *gin.Context) {
 // @Failure 401 {object} utils.ErrorAPIResponseRefreshTokenInvalid "Refresh Token 無效或過期，error_code: 1008"
 // @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
-// @Router /auth/refresh [post]
+// @Router /v1/auth/refresh [post]
 func RefreshToken(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
@@ -352,7 +352,7 @@ func RefreshToken(c *gin.Context) {
 // @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Token 缺失，error_code: 1006"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenInvalid "Token 無效或過期，error_code: 1007"
-// @Router /auth/logout [post]
+// @Router /v1/auth/logout [post]
 func LogoutUser(c *gin.Context) {
 	// 從 Header 中提取 Access Token（可能缺/過期/無效，仍然繼續流程）
 	tokenString := c.GetHeader("Authorization")
