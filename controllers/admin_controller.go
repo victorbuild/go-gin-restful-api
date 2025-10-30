@@ -16,14 +16,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AdminUserItem 定義使用者列表的單筆資料（Swagger 用）
+// @Description 使用者列表的單筆資料
+// swagger:model AdminUserItem
+type AdminUserItem struct {
+	ID    uint   `json:"id" example:"1"`
+	Name  string `json:"name" example:"Victor"`
+	Email string `json:"email" example:"victor@example.com"`
+	Role  string `json:"role" example:"user"`
+}
+
+// AdminUserListData 定義列表回應的 data 結構（Swagger 用）
+// swagger:model AdminUserListData
+type AdminUserListData struct {
+	Items []AdminUserItem `json:"items"`
+}
+
+// AdminUserListSuccessResponse 定義成功回應（Swagger 用）
+// swagger:model AdminUserListSuccessResponse
+type AdminUserListSuccessResponse struct {
+	Status  string            `json:"status" example:"success"`
+	Message string            `json:"message" example:"All users retrieved successfully"`
+	Data    AdminUserListData `json:"data"`
+	Meta    utils.MetaData    `json:"meta"`
+}
+
 // FindAllUsers - 取得所有使用者
 // @Summary 取得使用者列表
 // @Description 取得所有使用者資料（需管理員權限）
 // @Tags Admin
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} utils.SuccessAPIResponse "成功取得使用者列表"
+// @Success 200 {object} controllers.AdminUserListSuccessResponse "成功取得使用者列表"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Unauthorized，error_code: 1006"
+// @Failure 403 {object} utils.ErrorAPIResponseForbidden "Forbidden，error_code: 1010"
+// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "Internal server error，error_code: 4001"
 // @Router /v1/admin/users [get]
 func FindAllUsers(c *gin.Context) {
 	userRepo := repository.NewUserRepository()

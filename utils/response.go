@@ -217,6 +217,23 @@ type ErrorAPIResponseInternalServerError struct {
 	Meta MetaData `json:"meta"`
 }
 
+// ErrorAPIResponseForbidden 定義 403 禁止存取錯誤回應結構
+// @Description 禁止存取（權限不足）錯誤回應
+// swagger:model ErrorAPIResponseForbidden
+type ErrorAPIResponseForbidden struct {
+	// Status 狀態: "error"
+	Status string `json:"status" example:"error"`
+
+	// Message 訊息描述
+	Message string `json:"message" example:"Forbidden"`
+
+	// ErrorCode 錯誤代碼: 1010
+	ErrorCode int `json:"error_code" example:"1010" swaggertype:"integer"`
+
+	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
+	Meta MetaData `json:"meta"`
+}
+
 // MarshalJSON 自訂 JSON 序列化以確保欄位順序
 func (e ErrorAPIResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
