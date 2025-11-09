@@ -5,29 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/smtp"
 
 	"restfulapi/config"
 	"restfulapi/models"
+	"restfulapi/services"
 )
-
-// 發送 Email（直接在 Worker 裡發送）
-func sendEmail(to string, subject string, body string) {
-	auth := smtp.PlainAuth("", config.SMTPUser, config.SMTPPassword, config.SMTPHost)
-	msg := []byte("To: " + to + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"\r\n" + body + "\r\n")
-
-	err := smtp.SendMail(config.SMTPHost+":"+config.SMTPPort, auth, config.SMTPUser, []string{to}, msg)
-	if err != nil {
-		log.Println("❌ 發送 Email 失敗:", err)
-	} else {
-		log.Println("✅ Email 已發送到:", to)
-	}
-}
 
 // StartUserWorker 監聽 RabbitMQ
 func StartUserWorker() {
+	emailNotifier := services.NewEmailNotifier()
 	config.InitRabbitMQ()
 	defer config.CloseRabbitMQ()
 
@@ -61,7 +47,7 @@ func StartUserWorker() {
 		// **發送 Email**
 		subject := "歡迎加入我們！"
 		body := fmt.Sprintf("嗨 %s，感謝你的註冊！", user.Name)
-		sendEmail(user.Email, subject, body)
+		emailNotifier.Send(user.Email, subject, body)
 
 		fmt.Printf("📧 已發送 Email 給: %s (%s)\n", user.Name, user.Email)
 	}
