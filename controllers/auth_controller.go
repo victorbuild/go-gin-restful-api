@@ -91,20 +91,20 @@ func RegisterUser(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
 		return
 	}
 
 	user := models.User{}
 	err := c.BindJSON(&user)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.ErrInvalidInput)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
 		return
 	}
 
 	// 驗證必填欄位
 	if user.Name == "" || user.Email == "" || user.Password == "" {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Missing required fields", utils.ErrMissingRequiredFields)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Missing required fields", utils.CodeMissingRequiredFields)
 		return
 	}
 
@@ -115,17 +115,17 @@ func RegisterUser(c *gin.Context) {
 
 	if createUserErr != nil {
 		switch {
-		case errors.Is(createUserErr, models.ErrEmailExists):
-			utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.ErrEmailExists)
-		case errors.Is(createUserErr, models.ErrPasswordHashFail):
+		case errors.Is(createUserErr, utils.ErrEmailExists):
+			utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.CodeEmailExists)
+		case errors.Is(createUserErr, utils.ErrPasswordHashFail):
 			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrPasswordHashFail)
-		case errors.Is(createUserErr, models.ErrDatabaseError):
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodePasswordHashFail)
+		case errors.Is(createUserErr, utils.ErrDatabaseError):
 			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrDatabaseError)
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeDatabaseError)
 		default:
 			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.ErrInternalError)
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeInternalError)
 		}
 		return
 	}
@@ -179,7 +179,7 @@ func LoginUser(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
 		return
 	}
 
@@ -187,7 +187,7 @@ func LoginUser(c *gin.Context) {
 
 	// 解析請求 JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.ErrInvalidInput)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
 		return
 	}
 
@@ -197,20 +197,20 @@ func LoginUser(c *gin.Context) {
 
 	// 檢查使用者是否存在
 	if result.RowsAffected == 0 {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.ErrInvalidCredentials)
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.CodeInvalidCredentials)
 		return
 	}
 
 	// 檢查資料庫查詢錯誤（使用者存在但查詢過程發生其他錯誤）
 	if result.Error != nil {
 		logger.LogError("login", result.Error)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to login", utils.ErrDatabaseError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to login", utils.CodeDatabaseError)
 		return
 	}
 
 	// 檢查密碼
 	if !user.CheckPassword(input.Password) {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.ErrInvalidCredentials)
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.CodeInvalidCredentials)
 		return
 	}
 
@@ -218,7 +218,7 @@ func LoginUser(c *gin.Context) {
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, user.Email, user.Role)
 	if err != nil {
 		logger.LogError("login", err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.ErrTokenGenerationFailed)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.CodeTokenGenerationFailed)
 		return
 	}
 
@@ -246,13 +246,13 @@ func RefreshToken(c *gin.Context) {
 	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
 	contentType := c.GetHeader("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.ErrUnsupportedMediaType)
+		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
 		return
 	}
 
 	var input RefreshTokenInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.ErrInvalidInput)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
 		return
 	}
 
@@ -261,13 +261,13 @@ func RefreshToken(c *gin.Context) {
 	refreshTokenBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
 	exists, err := config.RedisClient.Exists(ctx, refreshTokenBlacklistKey).Result()
 	if err == nil && exists > 0 {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token has been revoked", utils.ErrRefreshTokenInvalid)
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token has been revoked", utils.CodeRefreshTokenInvalid)
 		return
 	}
 
 	token, err := config.ValidateToken(input.RefreshToken, config.JWTConfig.RefreshTokenSecret)
 	if err != nil || !token.Valid {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.ErrRefreshTokenInvalid)
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.CodeRefreshTokenInvalid)
 		return
 	}
 
@@ -275,14 +275,14 @@ func RefreshToken(c *gin.Context) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		logger.LogError("refresh", errors.New("failed to parse token claims"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
 		return
 	}
 
 	refreshExp, ok := claims["exp"].(float64)
 	if !ok {
 		logger.LogError("refresh", errors.New("no exp in refresh token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
 		return
 	}
 	refreshExpTime := time.Unix(int64(refreshExp), 0)
@@ -299,14 +299,14 @@ func RefreshToken(c *gin.Context) {
 	userID, ok := claims["sub"].(float64)
 	if !ok {
 		logger.LogError("refresh", errors.New("invalid user ID in token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
 		return
 	}
 
 	email, ok := claims["email"].(string)
 	if !ok {
 		logger.LogError("refresh", errors.New("invalid email in token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrInternalError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
 		return
 	}
 
@@ -315,13 +315,13 @@ func RefreshToken(c *gin.Context) {
 	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
 	if result.RowsAffected == 0 {
 		logger.LogError("refresh", errors.New("user not found"))
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.ErrRefreshTokenInvalid)
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.CodeRefreshTokenInvalid)
 		return
 	}
 
 	if result.Error != nil {
 		logger.LogError("refresh", result.Error)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.ErrDatabaseError)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeDatabaseError)
 		return
 	}
 
@@ -329,7 +329,7 @@ func RefreshToken(c *gin.Context) {
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, email, user.Role)
 	if err != nil {
 		logger.LogError("refresh", err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.ErrTokenGenerationFailed)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.CodeTokenGenerationFailed)
 		return
 	}
 

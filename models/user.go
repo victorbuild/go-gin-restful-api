@@ -1,19 +1,11 @@
 package models
 
 import (
-	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	db "restfulapi/database"
-)
+	"restfulapi/utils"
 
-// 預先定義錯誤變數
-// 到時候再看要搬去哪
-var (
-	ErrUserNotFound     = errors.New("user not found")
-	ErrEmailExists      = errors.New("email already registered")
-	ErrPasswordHashFail = errors.New("password encryption failed")
-	ErrDatabaseError    = errors.New("database error")
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -37,7 +29,7 @@ func FindByUserId(userId int) (User, error) {
 
 	// 如果沒有找到使用者，回傳 `ErrUserNotFound`
 	if result.RowsAffected == 0 {
-		return User{}, ErrUserNotFound
+		return User{}, utils.ErrUserNotFound
 	}
 
 	// 其他錯誤（例如資料庫錯誤）
@@ -76,14 +68,14 @@ func IsEmailExists(email string, excludeUserID int) bool {
 func CreateUser(user User) (uint, error) {
 	// 檢查 Email 是否已存在
 	if IsEmailExists(user.Email, 0) {
-		return 0, ErrEmailExists
+		return 0, utils.ErrEmailExists
 	}
 
 	// 加密密碼
 	hashedPassword, err := hashPassword(user.Password)
 	if err != nil {
-		log.Println("❌ Failed to hash password:", err)
-		return 0, ErrPasswordHashFail
+		log.Println("Failed to hash password:", err)
+		return 0, utils.ErrPasswordHashFail
 	}
 
 	// 將加密後的密碼存入 User 結構
@@ -93,8 +85,8 @@ func CreateUser(user User) (uint, error) {
 	result := db.DbConnect.Create(&user)
 
 	if result.Error != nil {
-		log.Println("❌ Failed to create user:", result.Error)
-		return 0, ErrDatabaseError
+		log.Println("Failed to create user:", result.Error)
+		return 0, utils.ErrDatabaseError
 	}
 
 	return user.ID, nil
@@ -104,8 +96,8 @@ func DeleteUser(userId int) (int64, error) {
 	result := db.DbConnect.Delete(&User{}, userId)
 
 	if result.Error != nil {
-		log.Println("❌ 刪除使用者失敗:", result.Error) // ✅ 只記錄 log，不會讓程式崩潰
-		return 0, result.Error                  // 回傳錯誤，讓上層處理
+		log.Println("刪除使用者失敗:", result.Error)
+		return 0, result.Error
 	}
 
 	return result.RowsAffected, nil // 回傳影響的行數

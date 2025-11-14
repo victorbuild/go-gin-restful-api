@@ -16,7 +16,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", utils.ErrTokenMissing)
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", utils.CodeTokenMissing)
 			c.Abort()
 			return
 		}
@@ -28,7 +28,7 @@ func RequireAuth() gin.HandlerFunc {
 		blacklistKey := "access_token:blacklist:" + tokenString
 		exists, err := config.RedisClient.Exists(ctx, blacklistKey).Result()
 		if err == nil && exists > 0 {
-			utils.ErrorResponse(c, http.StatusUnauthorized, "Token has been revoked", utils.ErrTokenInvalid)
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Token has been revoked", utils.CodeTokenInvalid)
 			c.Abort()
 			return
 		}
@@ -36,7 +36,7 @@ func RequireAuth() gin.HandlerFunc {
 		// 驗證 Token
 		token, err := config.ValidateToken(tokenString, config.JWTConfig.AccessTokenSecret)
 		if err != nil || !token.Valid {
-			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid token", utils.ErrTokenInvalid)
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid token", utils.CodeTokenInvalid)
 			c.Abort()
 			return
 		}

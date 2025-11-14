@@ -86,7 +86,7 @@ func FindAllUsers(c *gin.Context) {
 func FindByUserId(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", 1001)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
 		return
 	}
 
@@ -110,11 +110,11 @@ func FindByUserId(c *gin.Context) {
 
 	user, err := models.FindByUserId(userId)
 	// 使用 `errors.Is()` 來區分不同的錯誤
-	if errors.Is(err, models.ErrUserNotFound) {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", 1009)
+	if errors.Is(err, utils.ErrUserNotFound) {
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
 		return
 	} else if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", 5000)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", utils.CodeDatabaseError)
 		return
 	}
 
@@ -135,20 +135,20 @@ func DeleteUser(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", 1001)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
 		return
 	}
 
 	// 嘗試刪除使用者
 	rowsAffected, deleteErr := models.DeleteUser(userId)
 	if deleteErr != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user", 1011)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user", utils.CodeDeleteUserFailed)
 		return
 	}
 
 	// 如果沒有影響任何行，代表用戶不存在
 	if rowsAffected == 0 {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", 1009)
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
 		return
 	}
 
@@ -161,30 +161,30 @@ func UpdateUser(c *gin.Context) {
 	// 解析 `id`
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", 1001)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
 		return
 	}
 
 	var input models.UpdateUserInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", 1000)
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
 		return
 	}
 
 	user, err := models.FindByUserId(userId)
-	if errors.Is(err, models.ErrUserNotFound) {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", 1009)
+	if errors.Is(err, utils.ErrUserNotFound) {
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
 		return
 	} else if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", 5000)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", utils.CodeDatabaseError)
 		return
 	}
 
-	// ✅ 檢查 `email` 是否已經被其他用戶使用
+	// 檢查 email 是否已經被其他用戶使用
 	if input.Email != "" && input.Email != user.Email {
-		exists := models.IsEmailExists(input.Email, userId) // ✅ 確保不包含自己
+		exists := models.IsEmailExists(input.Email, userId)
 		if exists {
-			utils.ErrorResponse(c, http.StatusConflict, "Email already in use", 1013)
+			utils.ErrorResponse(c, http.StatusConflict, "Email already in use", utils.CodeEmailInUse)
 			return
 		}
 	}
@@ -198,5 +198,5 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update user", 1012)
+	utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update user", utils.CodeUpdateUserFailed)
 }

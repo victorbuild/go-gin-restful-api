@@ -12,7 +12,7 @@ func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists || role.(string) != "admin" {
-			utils.ErrorResponse(c, http.StatusForbidden, "Forbidden", 1010)
+			utils.ErrorResponse(c, http.StatusForbidden, "Forbidden", utils.CodeForbidden)
 			c.Abort()
 			return
 		}
