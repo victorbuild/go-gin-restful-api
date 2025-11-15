@@ -2,10 +2,13 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/google/uuid"
 )
@@ -302,4 +305,43 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, errorCode int
 		Meta:      generateMetaData(),
 	}
 	c.JSON(statusCode, response)
+}
+
+// FormatValidationError 格式化驗證錯誤訊息
+func FormatValidationError(err error) string {
+	var messages []string
+	
+	// 檢查是否為 validator.ValidationErrors
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		for _, e := range validationErrors {
+			// 取得欄位名稱（使用 json tag，如果沒有則使用欄位名稱）
+			field := e.Field()
+			
+			// 根據驗證標籤產生錯誤訊息
+			var msg string
+			switch e.Tag() {
+			case "required":
+				msg = fmt.Sprintf("%s 為必填欄位", field)
+			case "email":
+				msg = fmt.Sprintf("%s 格式不正確", field)
+			case "min":
+				msg = fmt.Sprintf("%s 長度不足（最少 %s 個字元）", field, e.Param())
+			case "max":
+				msg = fmt.Sprintf("%s 長度過長（最多 %s 個字元）", field, e.Param())
+			default:
+				msg = fmt.Sprintf("%s 驗證失敗（%s）", field, e.Tag())
+			}
+			messages = append(messages, msg)
+		}
+		return strings.Join(messages, "; ")
+	}
+	
+	// 如果不是驗證錯誤，返回原始錯誤訊息
+	return err.Error()
+}
+
+// ValidationErrorResponse 驗證錯誤回應
+func ValidationErrorResponse(c *gin.Context, err error) {
+	message := FormatValidationError(err)
+	ErrorResponse(c, http.StatusBadRequest, message, CodeInvalidInput)
 }

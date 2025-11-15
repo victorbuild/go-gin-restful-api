@@ -95,21 +95,19 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	user := models.User{}
-	err := c.BindJSON(&user)
+	input := RegisterUserInput{}
+	err := c.ShouldBindJSON(&input)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
-	// 驗證必填欄位
-	if user.Name == "" || user.Email == "" || user.Password == "" {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Missing required fields", utils.CodeMissingRequiredFields)
-		return
+	user := models.User{
+		Name:     input.Name,
+		Email:    input.Email,
+		Password: input.Password,
+		Role:     "user", // 強制設定 role 為 "user"，防止惡意註冊成 admin
 	}
-
-	// 強制設定 role 為 "user"，防止惡意註冊成 admin
-	user.Role = "user"
 
 	createUserId, createUserErr := models.CreateUser(user)
 
