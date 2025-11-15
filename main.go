@@ -21,7 +21,6 @@ import (
 	adminRoutes "restfulapi/routers/admin"
 	"restfulapi/workers"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "restfulapi/docs"
@@ -31,29 +30,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
-
-var (
-	httpRequestsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "API 請求總數",
-		},
-		[]string{"method", "endpoint", "status_code"},
-	)
-
-	httpRequestDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name: "http_request_duration_seconds",
-			Help: "API 請求延遲",
-		},
-		[]string{"method", "endpoint"},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(httpRequestsTotal)
-	prometheus.MustRegister(httpRequestDuration)
-}
 
 func main() {
 	// 初始化 Redis 連線
@@ -93,7 +69,8 @@ func main() {
 	// **加入 Logger Middleware，確保所有請求都記錄到 Kafka**
 	r.Use(middlewares.LoggerMiddleware())
 
-	r.Use(PrometheusMiddleware())
+	// **加入 Prometheus Middleware，記錄 API 指標**
+	r.Use(middlewares.PrometheusMiddleware())
 
 	v1 := r.Group("/v1")
 	// 管理員 API
@@ -105,18 +82,4 @@ func main() {
 
 	// 啟動伺服器
 	r.Run(":8000")
-}
-
-func PrometheusMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		timer := prometheus.NewTimer(httpRequestDuration.WithLabelValues(c.Request.Method, c.FullPath()))
-		c.Next()
-		timer.ObserveDuration()
-
-		httpRequestsTotal.WithLabelValues(
-			c.Request.Method,
-			c.FullPath(),
-			fmt.Sprintf("%d", c.Writer.Status()),
-		).Inc()
-	}
 }
