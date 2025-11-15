@@ -88,10 +88,7 @@ type LogoutInput struct {
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/register [post]
 func RegisterUser(c *gin.Context) {
-	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
-	contentType := c.GetHeader("Content-Type")
-	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
+	if !validateContentType(c) {
 		return
 	}
 
@@ -174,10 +171,7 @@ func RegisterUser(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/login [post]
 func LoginUser(c *gin.Context) {
-	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
-	contentType := c.GetHeader("Content-Type")
-	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
+	if !validateContentType(c) {
 		return
 	}
 
@@ -241,10 +235,7 @@ func LoginUser(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/refresh [post]
 func RefreshToken(c *gin.Context) {
-	// 檢查 Content-Type 是否為 application/json（支援帶參數的格式，如 application/json; charset=utf-8）
-	contentType := c.GetHeader("Content-Type")
-	if contentType != "" && !strings.HasPrefix(contentType, "application/json") {
-		utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
+	if !validateContentType(c) {
 		return
 	}
 
@@ -405,4 +396,14 @@ func LogoutUser(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, "Logout successful", gin.H{})
+}
+
+func validateContentType(c *gin.Context) bool {
+	contentType := c.GetHeader("Content-Type")
+	if contentType == "" || strings.HasPrefix(contentType, "application/json") {
+		return true
+	}
+
+	utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
+	return false
 }
