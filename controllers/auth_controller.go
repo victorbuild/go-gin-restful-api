@@ -109,19 +109,7 @@ func RegisterUser(c *gin.Context) {
 	createUserId, createUserErr := models.CreateUser(user)
 
 	if createUserErr != nil {
-		switch {
-		case errors.Is(createUserErr, utils.ErrEmailExists):
-			utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.CodeEmailExists)
-		case errors.Is(createUserErr, utils.ErrPasswordHashFail):
-			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodePasswordHashFail)
-		case errors.Is(createUserErr, utils.ErrDatabaseError):
-			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeDatabaseError)
-		default:
-			logger.LogError("register", createUserErr)
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeInternalError)
-		}
+		handleCreateUserError(c, createUserErr, "register")
 		return
 	}
 
@@ -396,6 +384,23 @@ func LogoutUser(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, "Logout successful", gin.H{})
+}
+
+// handleCreateUserError 處理創建用戶時的錯誤
+func handleCreateUserError(c *gin.Context, err error, operation string) {
+	switch {
+	case errors.Is(err, utils.ErrEmailExists):
+		utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.CodeEmailExists)
+	case errors.Is(err, utils.ErrPasswordHashFail):
+		logger.LogError(operation, err)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodePasswordHashFail)
+	case errors.Is(err, utils.ErrDatabaseError):
+		logger.LogError(operation, err)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeDatabaseError)
+	default:
+		logger.LogError(operation, err)
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeInternalError)
+	}
 }
 
 func validateContentType(c *gin.Context) bool {
