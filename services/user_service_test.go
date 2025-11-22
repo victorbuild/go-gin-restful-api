@@ -1,9 +1,8 @@
-package tests
+package services
 
 import (
 	"restfulapi/models"
 	"restfulapi/repositories"
-	"restfulapi/services"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ func TestGetAllUsers(t *testing.T) {
 	mockRepo := &MockUserRepository{}
 
 	// 傳入 Mock Repository 給 UserService
-	userService := services.NewUserService(mockRepo)
+	userService := NewUserService(mockRepo)
 
 	// 執行測試
 	users := userService.GetAllUsers()

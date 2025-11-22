@@ -59,56 +59,20 @@ go run .
 
 ```
 go-gin-restful-api/
-│── config/           # 配置（如環境變數、DB config）
-│   ├── database.go
-│   ├── env.go
-│   ├── jwt.go
-│   ├── kafka.go
-│   ├── rabbitmq.go
-│   ├── redis.go
-│   ├── smtp.go
-│   ├── ...
-│
+│── config/           # 配置（環境變數、資料庫、JWT、Kafka、Redis 等）
 │── controllers/      # 控制器（處理 HTTP 請求）
-│   ├── admin_controller.go
-│   ├── auth_controller.go
-│   ├── user_controller.go
-│
-│── database/         # 資料庫相關
-│   ├── postgresql.go
-│
-│── middlewares/         # 中介層 （JWT 驗證、日誌、錯誤處理）
-│
-│── models/           # 資料庫模型（定義 DB 結構）
-│   ├── user.go
-│
-│── pkg/           # 作為可以復用的套件
-│
-│── repositories/     # 資料存取層（處理 DB 查詢，解耦模型與控制器）
-│   ├── user_repository.go
-│
-│── routes/           # 定義路由
-│   ├── user_router.go
-│
-│── services/         # 處理商業邏輯
-│   ├── user_service.go
-│
-│── tests/            # 測試程式（K6壓測、單元測試、整合測試）
-│
-│── utils/            # 工具函式
-│   ├── response.go
-│
-│── .env              # 環境變數（DB 連線、JWT Secret）
-│── .env.example      # 環境範例
-│── .gitignore        # 忽略不必要 git 的檔案
-│── go.mod            # Go Module
-│── go.sum            # 依賴鎖定檔 類似 PHP composer.lock
-│── main.go
-│── 
-│── prometheus.yml    # Prometheus 監控設定
-│── 
-
-
+│── database/         # 資料庫連線與初始化
+│── middlewares/      # 中介層（JWT 驗證、日誌、錯誤處理、監控）
+│── models/           # 資料庫模型
+│── pkg/              # 可復用的套件（logger 等）
+│── repositories/     # 資料存取層
+│── routers/          # 路由定義
+│── services/         # 商業邏輯層（含單元測試）
+│── tests/            # 壓力測試、整合測試
+│── utils/            # 工具函式（回應格式、錯誤處理）
+│── workers/          # 背景任務處理
+│── main.go           # 應用程式入口
+│── go.mod            # Go Module 依賴管理
 ```
 
 ## 系統架構
@@ -172,7 +136,28 @@ sequenceDiagram
 - **Grafana**: 視覺化監控儀表板
 - **Health Check**: `/health` 健康檢查端點
 
-## 執行壓力測試
+## 執行測試
+
+### 單元測試
+
+專案遵循 Go 慣例，單元測試檔案與被測試程式碼放在同一目錄（例如 `services/user_service_test.go`）。
+
+**執行所有單元測試：**
+```bash
+go test ./...
+```
+
+**執行特定 package 的測試：**
+```bash
+go test ./services/...
+```
+
+**執行測試並顯示詳細輸出：**
+```bash
+go test ./... -v
+```
+
+### 壓力測試
 
 使用 K6 進行 API 壓力測試，請確認是否已安裝 K6：
 
