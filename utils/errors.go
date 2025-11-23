@@ -1,6 +1,9 @@
 package utils
 
-import "errors"
+import (
+	"errors"
+	"net/http"
+)
 
 // 錯誤碼常數（用於 API 回應）
 const (
@@ -33,3 +36,69 @@ var (
 	ErrPasswordHashFail = errors.New("password encryption failed")
 	ErrDatabaseError    = errors.New("database error")
 )
+
+// AppError 應用程式錯誤結構
+type AppError struct {
+	StatusCode int    // HTTP 狀態碼
+	Code       int    // 應用程式錯誤碼
+	Message    string // 錯誤訊息
+	Err        error  // 原始錯誤
+}
+
+// Error 實作 error 介面
+func (e *AppError) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return e.Message
+}
+
+// NewNotFoundError 建立 404 錯誤
+func NewNotFoundError(message string, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusNotFound,
+		Code:       CodeUserNotFound,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewBadRequestError 建立 400 錯誤
+func NewBadRequestError(message string, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusBadRequest,
+		Code:       CodeInvalidInput,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewInternalServerError 建立 500 錯誤
+func NewInternalServerError(message string, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusInternalServerError,
+		Code:       CodeInternalError,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewForbiddenError 建立 403 錯誤
+func NewForbiddenError(message string, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusForbidden,
+		Code:       CodeForbidden,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewUnauthorizedError 建立 401 錯誤
+func NewUnauthorizedError(message string, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusUnauthorized,
+		Code:       CodeTokenInvalid,
+		Message:    message,
+		Err:        err,
+	}
+}

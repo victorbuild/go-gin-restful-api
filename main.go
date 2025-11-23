@@ -72,6 +72,9 @@ func main() {
 	// **加入 Prometheus Middleware，記錄 API 指標**
 	r.Use(middlewares.PrometheusMiddleware())
 
+	// 錯誤處理 middleware（必須放在最後）
+	r.Use(middlewares.ErrorHandler())
+
 	v1 := r.Group("/v1")
 	// 管理員 API
 	adminRoutes.SetupAdminUserRoutes(v1)
