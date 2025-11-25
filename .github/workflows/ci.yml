@@ -3,10 +3,11 @@ name: CI
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     
     steps:
@@ -26,47 +27,9 @@ jobs:
     
     - name: Build
       run: go build -v ./...
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-    
-    - name: Install swag
-      run: go install github.com/swaggo/swag/cmd/swag@latest
-    
-    - name: Generate Swagger docs
-      run: swag init
-    
-    - name: Run tests
-      run: go test ./...
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-    
-    - name: Install swag
-      run: go install github.com/swaggo/swag/cmd/swag@latest
-    
-    - name: Generate Swagger docs
-      run: swag init
+    - name: Test
+      run: go test -v ./...
     
     - name: Run go vet
       run: go vet ./...
