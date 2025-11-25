@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/http"
+	"fmt"
 	"restfulapi/config"
 	"restfulapi/models"
 	repository "restfulapi/repositories"
@@ -86,7 +86,7 @@ func FindAllUsers(c *gin.Context) {
 func FindByUserId(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
 		return
 	}
 
@@ -111,10 +111,14 @@ func FindByUserId(c *gin.Context) {
 	user, err := models.FindByUserId(userId)
 	// 使用 `errors.Is()` 來區分不同的錯誤
 	if errors.Is(err, utils.ErrUserNotFound) {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
+		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
 		return
 	} else if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", utils.CodeDatabaseError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDatabaseError,
+			fmt.Errorf("failed to find user by id: userId=%d, error=%w", userId, err),
+		))
 		return
 	}
 
@@ -135,20 +139,24 @@ func DeleteUser(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
 		return
 	}
 
 	// 嘗試刪除使用者
 	rowsAffected, deleteErr := models.DeleteUser(userId)
 	if deleteErr != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user", utils.CodeDeleteUserFailed)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDeleteUserFailed,
+			fmt.Errorf("failed to delete user: userId=%d, error=%w", userId, deleteErr),
+		))
 		return
 	}
 
 	// 如果沒有影響任何行，代表用戶不存在
 	if rowsAffected == 0 {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
+		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, nil))
 		return
 	}
 
@@ -161,22 +169,26 @@ func UpdateUser(c *gin.Context) {
 	// 解析 `id`
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
 		return
 	}
 
 	var input models.UpdateUserInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
 		return
 	}
 
 	user, err := models.FindByUserId(userId)
 	if errors.Is(err, utils.ErrUserNotFound) {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found", utils.CodeUserNotFound)
+		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
 		return
 	} else if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Database error", utils.CodeDatabaseError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDatabaseError,
+			fmt.Errorf("failed to find user by id: userId=%d, error=%w", userId, err),
+		))
 		return
 	}
 
@@ -184,7 +196,7 @@ func UpdateUser(c *gin.Context) {
 	if input.Email != "" && input.Email != user.Email {
 		exists := models.IsEmailExists(input.Email, userId)
 		if exists {
-			utils.ErrorResponse(c, http.StatusConflict, "Email already in use", utils.CodeEmailInUse)
+			c.Error(utils.NewConflictError("Email already in use", utils.CodeEmailInUse, nil))
 			return
 		}
 	}
@@ -198,5 +210,9 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update user", utils.CodeUpdateUserFailed)
+	c.Error(utils.NewInternalServerError(
+		"Internal server error",
+		utils.CodeUpdateUserFailed,
+		fmt.Errorf("failed to update user: userId=%d, result=%d", userId, result),
+	))
 }

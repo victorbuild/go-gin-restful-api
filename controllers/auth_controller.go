@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
-	"net/http"
 	"restfulapi/config"
 	db "restfulapi/database"
 	"restfulapi/models"
@@ -167,7 +167,7 @@ func LoginUser(c *gin.Context) {
 
 	// 解析請求 JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
 		return
 	}
 
@@ -177,28 +177,34 @@ func LoginUser(c *gin.Context) {
 
 	// 檢查使用者是否存在
 	if result.RowsAffected == 0 {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.CodeInvalidCredentials)
+		c.Error(utils.NewUnauthorizedError("Invalid email or password", utils.CodeInvalidCredentials, nil))
 		return
 	}
 
 	// 檢查資料庫查詢錯誤（使用者存在但查詢過程發生其他錯誤）
 	if result.Error != nil {
-		logger.LogError("login", result.Error)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to login", utils.CodeDatabaseError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDatabaseError,
+			fmt.Errorf("failed to login: email=%s, error=%w", input.Email, result.Error),
+		))
 		return
 	}
 
 	// 檢查密碼
 	if !user.CheckPassword(input.Password) {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid email or password", utils.CodeInvalidCredentials)
+		c.Error(utils.NewUnauthorizedError("Invalid email or password", utils.CodeInvalidCredentials, nil))
 		return
 	}
 
 	// 產生 Access Token & Refresh Token
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, user.Email, user.Role)
 	if err != nil {
-		logger.LogError("login", err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.CodeTokenGenerationFailed)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeTokenGenerationFailed,
+			fmt.Errorf("failed to generate token: userId=%d, error=%w", user.ID, err),
+		))
 		return
 	}
 
@@ -229,7 +235,7 @@ func RefreshToken(c *gin.Context) {
 
 	var input RefreshTokenInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid input", utils.CodeInvalidInput)
+		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
 		return
 	}
 
@@ -238,28 +244,34 @@ func RefreshToken(c *gin.Context) {
 	refreshTokenBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
 	exists, err := config.RedisClient.Exists(ctx, refreshTokenBlacklistKey).Result()
 	if err == nil && exists > 0 {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token has been revoked", utils.CodeRefreshTokenInvalid)
+		c.Error(utils.NewUnauthorizedError("Refresh token has been revoked", utils.CodeRefreshTokenInvalid, nil))
 		return
 	}
 
 	token, err := config.ValidateToken(input.RefreshToken, config.JWTConfig.RefreshTokenSecret)
 	if err != nil || !token.Valid {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.CodeRefreshTokenInvalid)
+		c.Error(utils.NewUnauthorizedError("Invalid or expired refresh token", utils.CodeRefreshTokenInvalid, err))
 		return
 	}
 
 	// 提取 exp，進行 Rotation，本次 refresh token 立即失效（寫入黑名單）
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		logger.LogError("refresh", errors.New("failed to parse token claims"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeInternalError,
+			errors.New("failed to parse token claims"),
+		))
 		return
 	}
 
 	refreshExp, ok := claims["exp"].(float64)
 	if !ok {
-		logger.LogError("refresh", errors.New("no exp in refresh token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeInternalError,
+			errors.New("no exp in refresh token"),
+		))
 		return
 	}
 	refreshExpTime := time.Unix(int64(refreshExp), 0)
@@ -275,15 +287,21 @@ func RefreshToken(c *gin.Context) {
 	// 從 Token 中提取使用者資訊
 	userID, ok := claims["sub"].(float64)
 	if !ok {
-		logger.LogError("refresh", errors.New("invalid user ID in token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeInternalError,
+			errors.New("invalid user ID in token"),
+		))
 		return
 	}
 
 	email, ok := claims["email"].(string)
 	if !ok {
-		logger.LogError("refresh", errors.New("invalid email in token"))
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeInternalError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeInternalError,
+			errors.New("invalid email in token"),
+		))
 		return
 	}
 
@@ -291,22 +309,27 @@ func RefreshToken(c *gin.Context) {
 	var user models.User
 	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
 	if result.RowsAffected == 0 {
-		logger.LogError("refresh", errors.New("user not found"))
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired refresh token", utils.CodeRefreshTokenInvalid)
+		c.Error(utils.NewUnauthorizedError("Invalid or expired refresh token", utils.CodeRefreshTokenInvalid, errors.New("user not found")))
 		return
 	}
 
 	if result.Error != nil {
-		logger.LogError("refresh", result.Error)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh token", utils.CodeDatabaseError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDatabaseError,
+			fmt.Errorf("failed to refresh token: userId=%d, error=%w", uint(userID), result.Error),
+		))
 		return
 	}
 
 	// 產生新的 Access Token & Refresh Token
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, email, user.Role)
 	if err != nil {
-		logger.LogError("refresh", err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate token", utils.CodeTokenGenerationFailed)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeTokenGenerationFailed,
+			fmt.Errorf("failed to generate token: userId=%d, error=%w", user.ID, err),
+		))
 		return
 	}
 
@@ -390,16 +413,25 @@ func LogoutUser(c *gin.Context) {
 func handleCreateUserError(c *gin.Context, err error, operation string) {
 	switch {
 	case errors.Is(err, utils.ErrEmailExists):
-		utils.ErrorResponse(c, http.StatusConflict, "Email already registered", utils.CodeEmailExists)
+		c.Error(utils.NewConflictError("Email already registered", utils.CodeEmailExists, err))
 	case errors.Is(err, utils.ErrPasswordHashFail):
-		logger.LogError(operation, err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodePasswordHashFail)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodePasswordHashFail,
+			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
+		))
 	case errors.Is(err, utils.ErrDatabaseError):
-		logger.LogError(operation, err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeDatabaseError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeDatabaseError,
+			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
+		))
 	default:
-		logger.LogError(operation, err)
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", utils.CodeInternalError)
+		c.Error(utils.NewInternalServerError(
+			"Internal server error",
+			utils.CodeInternalError,
+			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
+		))
 	}
 }
 
@@ -409,6 +441,6 @@ func validateContentType(c *gin.Context) bool {
 		return true
 	}
 
-	utils.ErrorResponse(c, http.StatusUnsupportedMediaType, "Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType)
+	c.Error(utils.NewUnsupportedMediaTypeError("Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType, nil))
 	return false
 }

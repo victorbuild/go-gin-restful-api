@@ -20,7 +20,7 @@ func ErrorHandler() gin.HandlerFunc {
 			if appError, ok := err.(*utils.AppError); ok {
 				appErr = appError
 			} else {
-				appErr = utils.NewInternalServerError("Internal server error", err)
+				appErr = utils.NewInternalServerError("Internal server error", utils.CodeInternalError, err)
 			}
 
 			// 記錄錯誤（根據狀態碼決定 log 等級）

@@ -54,50 +54,70 @@ func (e *AppError) Error() string {
 }
 
 // NewNotFoundError 建立 404 錯誤
-func NewNotFoundError(message string, err error) *AppError {
+func NewNotFoundError(message string, code int, err error) *AppError {
 	return &AppError{
 		StatusCode: http.StatusNotFound,
-		Code:       CodeUserNotFound,
+		Code:       code,
 		Message:    message,
 		Err:        err,
 	}
 }
 
 // NewBadRequestError 建立 400 錯誤
-func NewBadRequestError(message string, err error) *AppError {
+func NewBadRequestError(message string, code int, err error) *AppError {
 	return &AppError{
 		StatusCode: http.StatusBadRequest,
-		Code:       CodeInvalidInput,
+		Code:       code,
 		Message:    message,
 		Err:        err,
 	}
 }
 
 // NewInternalServerError 建立 500 錯誤
-func NewInternalServerError(message string, err error) *AppError {
+func NewInternalServerError(message string, code int, err error) *AppError {
 	return &AppError{
 		StatusCode: http.StatusInternalServerError,
-		Code:       CodeInternalError,
+		Code:       code,
 		Message:    message,
 		Err:        err,
 	}
 }
 
 // NewForbiddenError 建立 403 錯誤
-func NewForbiddenError(message string, err error) *AppError {
+func NewForbiddenError(message string, code int, err error) *AppError {
 	return &AppError{
 		StatusCode: http.StatusForbidden,
-		Code:       CodeForbidden,
+		Code:       code,
 		Message:    message,
 		Err:        err,
 	}
 }
 
 // NewUnauthorizedError 建立 401 錯誤
-func NewUnauthorizedError(message string, err error) *AppError {
+func NewUnauthorizedError(message string, code int, err error) *AppError {
 	return &AppError{
 		StatusCode: http.StatusUnauthorized,
-		Code:       CodeTokenInvalid,
+		Code:       code,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewConflictError 建立 409 錯誤
+func NewConflictError(message string, code int, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusConflict,
+		Code:       code,
+		Message:    message,
+		Err:        err,
+	}
+}
+
+// NewUnsupportedMediaTypeError 建立 415 錯誤
+func NewUnsupportedMediaTypeError(message string, code int, err error) *AppError {
+	return &AppError{
+		StatusCode: http.StatusUnsupportedMediaType,
+		Code:       code,
 		Message:    message,
 		Err:        err,
 	}
