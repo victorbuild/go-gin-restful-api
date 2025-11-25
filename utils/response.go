@@ -310,13 +310,13 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, errorCode int
 // FormatValidationError 格式化驗證錯誤訊息
 func FormatValidationError(err error) string {
 	var messages []string
-	
+
 	// 檢查是否為 validator.ValidationErrors
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range validationErrors {
 			// 取得欄位名稱（使用 json tag，如果沒有則使用欄位名稱）
 			field := e.Field()
-			
+
 			// 根據驗證標籤產生錯誤訊息
 			var msg string
 			switch e.Tag() {
@@ -335,13 +335,13 @@ func FormatValidationError(err error) string {
 		}
 		return strings.Join(messages, "; ")
 	}
-	
+
 	// 處理 JSON 解析錯誤（如 EOF、unexpected end of JSON input 等）
 	errMsg := err.Error()
 	if errMsg == "EOF" || strings.Contains(errMsg, "unexpected end of JSON input") || strings.Contains(errMsg, "invalid character") {
 		return "Invalid JSON format"
 	}
-	
+
 	// 如果不是驗證錯誤，返回原始錯誤訊息
 	return errMsg
 }
