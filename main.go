@@ -66,6 +66,9 @@ func main() {
 	// Prometheus metrics
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
+	// **加入 Trace ID Middleware
+	r.Use(middlewares.TraceIDMiddleware())
+
 	// **加入 Logger Middleware，確保所有請求都記錄到 Kafka**
 	r.Use(middlewares.LoggerMiddleware())
 

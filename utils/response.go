@@ -9,8 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-
-	"github.com/google/uuid"
 )
 
 // Pagination 定義分頁資訊
@@ -23,7 +21,6 @@ type Pagination struct {
 
 // MetaData 提供額外資訊
 type MetaData struct {
-	RequestID string `json:"request_id"`
 	Timestamp string `json:"timestamp"`
 }
 
@@ -41,7 +38,7 @@ type APIResponse struct {
 	// 錯誤代碼 (成功時省略)
 	ErrorCode int `json:"error_code,omitempty" example:"1000"`
 
-	// Meta 資訊 (例如 API 版本、請求 ID 等)
+	// Meta 資訊 (例如 API 版本、時間戳等)
 	Meta MetaData `json:"meta"`
 }
 
@@ -253,9 +250,8 @@ func (e ErrorAPIResponse) MarshalJSON() ([]byte, error) {
 }
 
 // 產生 MetaData
-func generateMetaData() MetaData {
+func generateMetaData(c *gin.Context) MetaData {
 	return MetaData{
-		RequestID: uuid.New().String(),
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 }
@@ -266,7 +262,7 @@ func SuccessResponse(c *gin.Context, message string, data interface{}) {
 		Status:  "success",
 		Message: message,
 		Data:    data,
-		Meta:    generateMetaData(),
+		Meta:    generateMetaData(c),
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -277,7 +273,7 @@ func CreatedResponse(c *gin.Context, message string, data interface{}) {
 		Status:  "success",
 		Message: message,
 		Data:    data,
-		Meta:    generateMetaData(),
+		Meta:    generateMetaData(c),
 	}
 	c.JSON(http.StatusCreated, response)
 }
@@ -291,7 +287,7 @@ func ListResponse(c *gin.Context, message string, items interface{}, pagination 
 			"items":      items,
 			"pagination": pagination,
 		},
-		Meta: generateMetaData(),
+		Meta: generateMetaData(c),
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -302,7 +298,7 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, errorCode int
 		Status:    "error",
 		Message:   message,
 		ErrorCode: errorCode,
-		Meta:      generateMetaData(),
+		Meta:      generateMetaData(c),
 	}
 	c.JSON(statusCode, response)
 }

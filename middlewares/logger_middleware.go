@@ -17,9 +17,10 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 		latency := time.Since(start).Milliseconds()
 		statusCode := c.Writer.Status()
+		traceID := GetTraceID(c)
 		requestLog := fmt.Sprintf(
-			`{"event":"log.api_request","timestamp":"%s","method":"%s","endpoint":"%s","status_code":%d,"response_time":%d}`,
-			start.Format(time.RFC3339), c.Request.Method, c.Request.URL.Path, statusCode, latency,
+			`{"event":"log.api_request","timestamp":"%s","trace_id":"%s","method":"%s","endpoint":"%s","status_code":%d,"response_time":%d}`,
+			start.Format(time.RFC3339), traceID, c.Request.Method, c.Request.URL.Path, statusCode, latency,
 		)
 
 		config.PublishKafkaMessage("log-topic", requestLog)
