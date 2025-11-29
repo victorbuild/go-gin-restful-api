@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"fmt"
-	"restfulapi/pkg/logger"
 	"restfulapi/internal/util"
+	"restfulapi/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 )

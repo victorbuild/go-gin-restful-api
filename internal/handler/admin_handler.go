@@ -38,7 +38,7 @@ type AdminUserListSuccessResponse struct {
 	Status  string            `json:"status" example:"success"`
 	Message string            `json:"message" example:"All users retrieved successfully"`
 	Data    AdminUserListData `json:"data"`
-	Meta    util.MetaData    `json:"meta"`
+	Meta    util.MetaData     `json:"meta"`
 }
 
 // FindAllUsers - 取得所有使用者

@@ -9,9 +9,9 @@ import (
 	"restfulapi/internal/config"
 	db "restfulapi/internal/database"
 	"restfulapi/internal/model"
+	"restfulapi/internal/util"
 	"restfulapi/middlewares"
 	"restfulapi/pkg/logger"
-	"restfulapi/internal/util"
 	"strings"
 	"time"
 
