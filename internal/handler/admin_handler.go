@@ -8,7 +8,7 @@ import (
 	"restfulapi/internal/config"
 	"restfulapi/internal/model"
 	repository "restfulapi/internal/repository"
-	service "restfulapi/services"
+	service "restfulapi/internal/service"
 	"restfulapi/utils"
 	"strconv"
 	"time"

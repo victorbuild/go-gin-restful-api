@@ -8,12 +8,12 @@ import (
 
 	"restfulapi/internal/config"
 	"restfulapi/internal/model"
-	"restfulapi/services"
+	"restfulapi/internal/service"
 )
 
 // StartUserWorker 監聽 RabbitMQ
 func StartUserWorker() {
-	emailNotifier := services.NewEmailNotifier()
+	emailNotifier := service.NewEmailNotifier()
 	config.InitRabbitMQ()
 	defer config.CloseRabbitMQ()
 
