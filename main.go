@@ -14,7 +14,7 @@ package main
 import (
 	"fmt"
 	"restfulapi/internal/config"
-	"restfulapi/database"
+	"restfulapi/internal/database"
 	"restfulapi/middlewares"
 	"restfulapi/models"
 	"restfulapi/routers"

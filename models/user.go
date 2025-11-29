@@ -2,7 +2,7 @@ package models
 
 import (
 	"log"
-	db "restfulapi/database"
+	db "restfulapi/internal/database"
 	"restfulapi/utils"
 
 	"golang.org/x/crypto/bcrypt"
