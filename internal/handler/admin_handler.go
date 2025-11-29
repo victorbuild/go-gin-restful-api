@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"restfulapi/internal/config"
 	"restfulapi/internal/model"
-	repository "restfulapi/repositories"
+	repository "restfulapi/internal/repository"
 	service "restfulapi/services"
 	"restfulapi/utils"
 	"strconv"

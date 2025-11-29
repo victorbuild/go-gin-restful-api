@@ -2,7 +2,7 @@ package services
 
 import (
 	"restfulapi/internal/model"
-	"restfulapi/repositories"
+	"restfulapi/internal/repository"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ import (
 type MockUserRepository struct{}
 
 // 確保 MockUserRepository 符合 IUserRepository 介面
-var _ repositories.IUserRepository = (*MockUserRepository)(nil)
+var _ repository.IUserRepository = (*MockUserRepository)(nil)
 
 // FindAllUsers 模擬回傳假資料
 func (m *MockUserRepository) FindAllUsers() []model.User {

@@ -1,4 +1,4 @@
-package repositories
+package repository
 
 import (
 	db "restfulapi/internal/database"
