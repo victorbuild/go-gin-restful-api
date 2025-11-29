@@ -1,12 +1,12 @@
 package routers
 
 import (
-	"restfulapi/controllers"
+	"restfulapi/internal/handler"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupHealthRoutes(r *gin.Engine) {
-	r.GET("/", controllers.Root)
-	r.GET("/health", controllers.HealthCheck)
+	r.GET("/", handler.Root)
+	r.GET("/health", handler.HealthCheck)
 }

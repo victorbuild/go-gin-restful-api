@@ -1,4 +1,4 @@
-package controllers
+package handler
 
 import (
 	"context"
@@ -47,7 +47,7 @@ type AdminUserListSuccessResponse struct {
 // @Tags Admin
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} controllers.AdminUserListSuccessResponse "成功取得使用者列表"
+// @Success 200 {object} handler.AdminUserListSuccessResponse "成功取得使用者列表"
 // @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Unauthorized，error_code: 1006"
 // @Failure 403 {object} utils.ErrorAPIResponseForbidden "Forbidden，error_code: 1010"
 // @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "Internal server error，error_code: 4001"

@@ -1,4 +1,4 @@
-package controllers
+package handler
 
 import (
 	"time"
@@ -22,7 +22,7 @@ type HealthResponse struct {
 // @Tags Health
 // @Accept json
 // @Produce json
-// @Success 200 {object} controllers.HealthResponse
+// @Success 200 {object} handler.HealthResponse
 // @Router /health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(200, HealthResponse{
@@ -46,7 +46,7 @@ type HealthRootResponse struct {
 // @Tags Health
 // @Accept json
 // @Produce json
-// @Success 200 {object} controllers.HealthRootResponse "服務啟動"
+// @Success 200 {object} handler.HealthRootResponse "服務啟動"
 // @Router / [get]
 func Root(c *gin.Context) {
 	c.JSON(200, HealthRootResponse{Status: "ok"})

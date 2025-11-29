@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"restfulapi/controllers"
+	"restfulapi/internal/handler"
 	"restfulapi/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +12,10 @@ func SetupAdminUserRoutes(r *gin.RouterGroup) {
 	admin := r.Group("/admin/users")
 	admin.Use(middlewares.RequireAuth(), middlewares.RequireAdmin())
 	{
-		admin.POST("/", controllers.RegisterUser)
-		admin.GET("/", controllers.FindAllUsers)
-		admin.GET("/:id", controllers.FindByUserId)
-		admin.DELETE("/:id", controllers.DeleteUser)
-		admin.PUT("/:id", controllers.UpdateUser)
+		admin.POST("/", handler.RegisterUser)
+		admin.GET("/", handler.FindAllUsers)
+		admin.GET("/:id", handler.FindByUserId)
+		admin.DELETE("/:id", handler.DeleteUser)
+		admin.PUT("/:id", handler.UpdateUser)
 	}
 }
