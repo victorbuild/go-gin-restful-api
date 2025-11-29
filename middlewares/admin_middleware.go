@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,7 +11,7 @@ func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists || role.(string) != "admin" {
-			c.Error(utils.NewForbiddenError("Forbidden", utils.CodeForbidden, nil))
+			c.Error(util.NewForbiddenError("Forbidden", util.CodeForbidden, nil))
 			c.Abort()
 			return
 		}

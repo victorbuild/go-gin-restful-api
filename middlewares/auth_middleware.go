@@ -3,7 +3,7 @@ package middlewares
 import (
 	"context"
 	"restfulapi/internal/config"
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +15,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			c.Error(utils.NewUnauthorizedError("Unauthorized", utils.CodeTokenMissing, nil))
+			c.Error(util.NewUnauthorizedError("Unauthorized", util.CodeTokenMissing, nil))
 			c.Abort()
 			return
 		}
@@ -27,7 +27,7 @@ func RequireAuth() gin.HandlerFunc {
 		blacklistKey := "access_token:blacklist:" + tokenString
 		exists, err := config.RedisClient.Exists(ctx, blacklistKey).Result()
 		if err == nil && exists > 0 {
-			c.Error(utils.NewUnauthorizedError("Token has been revoked", utils.CodeTokenInvalid, nil))
+			c.Error(util.NewUnauthorizedError("Token has been revoked", util.CodeTokenInvalid, nil))
 			c.Abort()
 			return
 		}
@@ -35,7 +35,7 @@ func RequireAuth() gin.HandlerFunc {
 		// 驗證 Token
 		token, err := config.ValidateToken(tokenString, config.JWTConfig.AccessTokenSecret)
 		if err != nil || !token.Valid {
-			c.Error(utils.NewUnauthorizedError("Invalid token", utils.CodeTokenInvalid, err))
+			c.Error(util.NewUnauthorizedError("Invalid token", util.CodeTokenInvalid, err))
 			c.Abort()
 			return
 		}

@@ -3,7 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"restfulapi/pkg/logger"
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,11 +16,11 @@ func ErrorHandler() gin.HandlerFunc {
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last().Err
 
-			var appErr *utils.AppError
-			if appError, ok := err.(*utils.AppError); ok {
+			var appErr *util.AppError
+			if appError, ok := err.(*util.AppError); ok {
 				appErr = appError
 			} else {
-				appErr = utils.NewInternalServerError("Internal server error", utils.CodeInternalError, err)
+				appErr = util.NewInternalServerError("Internal server error", util.CodeInternalError, err)
 			}
 
 			// 取得 Trace ID
@@ -43,7 +43,7 @@ func ErrorHandler() gin.HandlerFunc {
 				)
 			}
 
-			utils.ErrorResponse(c, appErr.StatusCode, appErr.Message, appErr.Code)
+			util.ErrorResponse(c, appErr.StatusCode, appErr.Message, appErr.Code)
 			c.Errors = c.Errors[:0]
 		}
 	}

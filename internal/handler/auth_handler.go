@@ -11,7 +11,7 @@ import (
 	"restfulapi/internal/model"
 	"restfulapi/middlewares"
 	"restfulapi/pkg/logger"
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 	"strings"
 	"time"
 
@@ -61,7 +61,7 @@ type LogoutSuccessResponse struct {
 	Data LogoutUserResponse `json:"data"`
 
 	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta utils.MetaData `json:"meta"`
+	Meta util.MetaData `json:"meta"`
 }
 
 // RefreshTokenInput 定義刷新 Token 輸入結構
@@ -81,12 +81,12 @@ type LogoutInput struct {
 // @Accept  json
 // @Produce  json
 // @Param   user  body RegisterUserInput  true  "使用者資訊"
-// @Success 201 {object} utils.SuccessAPIResponse{data=RegisterUserResponse} "註冊成功，回傳使用者資訊"
-// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
-// @Failure 400 {object} utils.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1002"
-// @Failure 409 {object} utils.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1003"
-// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
-// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
+// @Success 201 {object} util.SuccessAPIResponse{data=RegisterUserResponse} "註冊成功，回傳使用者資訊"
+// @Failure 400 {object} util.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 400 {object} util.ErrorAPIResponseMissingFields "缺少必填欄位，error_code: 1002"
+// @Failure 409 {object} util.ErrorAPIResponseEmailExists "Email 已經被註冊，error_code: 1003"
+// @Failure 415 {object} util.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} util.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/register [post]
 func RegisterUser(c *gin.Context) {
 	if !validateContentType(c) {
@@ -96,7 +96,7 @@ func RegisterUser(c *gin.Context) {
 	input := RegisterUserInput{}
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
-		utils.ValidationErrorResponse(c, err)
+		util.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -139,7 +139,7 @@ func RegisterUser(c *gin.Context) {
 	log.Println("註冊成功，已發送 user_created 事件:", string(message))
 
 	// 回應標準 JSON
-	utils.CreatedResponse(c, "User created successfully", gin.H{
+	util.CreatedResponse(c, "User created successfully", gin.H{
 		"id":    user.ID,
 		"name":  user.Name,
 		"email": user.Email,
@@ -153,11 +153,11 @@ func RegisterUser(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param   credentials  body LoginUserInput  true  "登入資訊"
-// @Success 200 {object} utils.SuccessAPIResponse{data=LoginUserResponse} "登入成功，回傳 Access Token 和 Refresh Token"
-// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
-// @Failure 401 {object} utils.ErrorAPIResponseInvalidCredentials "帳號或密碼錯誤，error_code: 1004"
-// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
-// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
+// @Success 200 {object} util.SuccessAPIResponse{data=LoginUserResponse} "登入成功，回傳 Access Token 和 Refresh Token"
+// @Failure 400 {object} util.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 401 {object} util.ErrorAPIResponseInvalidCredentials "帳號或密碼錯誤，error_code: 1004"
+// @Failure 415 {object} util.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} util.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/login [post]
 func LoginUser(c *gin.Context) {
 	if !validateContentType(c) {
@@ -168,7 +168,7 @@ func LoginUser(c *gin.Context) {
 
 	// 解析請求 JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid input", util.CodeInvalidInput, err))
 		return
 	}
 
@@ -178,15 +178,15 @@ func LoginUser(c *gin.Context) {
 
 	// 檢查使用者是否存在
 	if result.RowsAffected == 0 {
-		c.Error(utils.NewUnauthorizedError("Invalid email or password", utils.CodeInvalidCredentials, nil))
+		c.Error(util.NewUnauthorizedError("Invalid email or password", util.CodeInvalidCredentials, nil))
 		return
 	}
 
 	// 檢查資料庫查詢錯誤（使用者存在但查詢過程發生其他錯誤）
 	if result.Error != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDatabaseError,
+			util.CodeDatabaseError,
 			fmt.Errorf("failed to login: email=%s, error=%w", input.Email, result.Error),
 		))
 		return
@@ -194,23 +194,23 @@ func LoginUser(c *gin.Context) {
 
 	// 檢查密碼
 	if !user.CheckPassword(input.Password) {
-		c.Error(utils.NewUnauthorizedError("Invalid email or password", utils.CodeInvalidCredentials, nil))
+		c.Error(util.NewUnauthorizedError("Invalid email or password", util.CodeInvalidCredentials, nil))
 		return
 	}
 
 	// 產生 Access Token & Refresh Token
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, user.Email, user.Role)
 	if err != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeTokenGenerationFailed,
+			util.CodeTokenGenerationFailed,
 			fmt.Errorf("failed to generate token: userId=%d, error=%w", user.ID, err),
 		))
 		return
 	}
 
 	// 回應標準 JSON
-	utils.SuccessResponse(c, "Login successful!", gin.H{
+	util.SuccessResponse(c, "Login successful!", gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	})
@@ -223,11 +223,11 @@ func LoginUser(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param   refresh_token  body RefreshTokenInput  true  "Refresh Token"
-// @Success 200 {object} utils.SuccessAPIResponse{data=LoginUserResponse} "刷新成功，回傳新的 Access Token 和 Refresh Token"
-// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
-// @Failure 401 {object} utils.ErrorAPIResponseRefreshTokenInvalid "Refresh Token 無效或過期，error_code: 1008"
-// @Failure 415 {object} utils.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
-// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
+// @Success 200 {object} util.SuccessAPIResponse{data=LoginUserResponse} "刷新成功，回傳新的 Access Token 和 Refresh Token"
+// @Failure 400 {object} util.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 401 {object} util.ErrorAPIResponseRefreshTokenInvalid "Refresh Token 無效或過期，error_code: 1008"
+// @Failure 415 {object} util.ErrorAPIResponseUnsupportedMediaType "不支援的媒體類型，error_code: 1000"
+// @Failure 500 {object} util.ErrorAPIResponseInternalServerError "伺服器內部錯誤，error_code: 4001"
 // @Router /v1/auth/refresh [post]
 func RefreshToken(c *gin.Context) {
 	if !validateContentType(c) {
@@ -236,7 +236,7 @@ func RefreshToken(c *gin.Context) {
 
 	var input RefreshTokenInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid input", util.CodeInvalidInput, err))
 		return
 	}
 
@@ -245,22 +245,22 @@ func RefreshToken(c *gin.Context) {
 	refreshTokenBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
 	exists, err := config.RedisClient.Exists(ctx, refreshTokenBlacklistKey).Result()
 	if err == nil && exists > 0 {
-		c.Error(utils.NewUnauthorizedError("Refresh token has been revoked", utils.CodeRefreshTokenInvalid, nil))
+		c.Error(util.NewUnauthorizedError("Refresh token has been revoked", util.CodeRefreshTokenInvalid, nil))
 		return
 	}
 
 	token, err := config.ValidateToken(input.RefreshToken, config.JWTConfig.RefreshTokenSecret)
 	if err != nil || !token.Valid {
-		c.Error(utils.NewUnauthorizedError("Invalid or expired refresh token", utils.CodeRefreshTokenInvalid, err))
+		c.Error(util.NewUnauthorizedError("Invalid or expired refresh token", util.CodeRefreshTokenInvalid, err))
 		return
 	}
 
 	// 提取 exp，進行 Rotation，本次 refresh token 立即失效（寫入黑名單）
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeInternalError,
+			util.CodeInternalError,
 			errors.New("failed to parse token claims"),
 		))
 		return
@@ -268,9 +268,9 @@ func RefreshToken(c *gin.Context) {
 
 	refreshExp, ok := claims["exp"].(float64)
 	if !ok {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeInternalError,
+			util.CodeInternalError,
 			errors.New("no exp in refresh token"),
 		))
 		return
@@ -289,9 +289,9 @@ func RefreshToken(c *gin.Context) {
 	// 從 Token 中提取使用者資訊
 	userID, ok := claims["sub"].(float64)
 	if !ok {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeInternalError,
+			util.CodeInternalError,
 			errors.New("invalid user ID in token"),
 		))
 		return
@@ -299,9 +299,9 @@ func RefreshToken(c *gin.Context) {
 
 	email, ok := claims["email"].(string)
 	if !ok {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeInternalError,
+			util.CodeInternalError,
 			errors.New("invalid email in token"),
 		))
 		return
@@ -311,14 +311,14 @@ func RefreshToken(c *gin.Context) {
 	var user model.User
 	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
 	if result.RowsAffected == 0 {
-		c.Error(utils.NewUnauthorizedError("Invalid or expired refresh token", utils.CodeRefreshTokenInvalid, errors.New("user not found")))
+		c.Error(util.NewUnauthorizedError("Invalid or expired refresh token", util.CodeRefreshTokenInvalid, errors.New("user not found")))
 		return
 	}
 
 	if result.Error != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDatabaseError,
+			util.CodeDatabaseError,
 			fmt.Errorf("failed to refresh token: userId=%d, error=%w", uint(userID), result.Error),
 		))
 		return
@@ -327,16 +327,16 @@ func RefreshToken(c *gin.Context) {
 	// 產生新的 Access Token & Refresh Token
 	accessToken, refreshToken, err := config.GenerateTokens(user.ID, email, user.Role)
 	if err != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeTokenGenerationFailed,
+			util.CodeTokenGenerationFailed,
 			fmt.Errorf("failed to generate token: userId=%d, error=%w", user.ID, err),
 		))
 		return
 	}
 
 	// 回應標準 JSON
-	utils.SuccessResponse(c, "Token refreshed successfully", gin.H{
+	util.SuccessResponse(c, "Token refreshed successfully", gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	})
@@ -351,9 +351,9 @@ func RefreshToken(c *gin.Context) {
 // @Security BearerAuth
 // @Param   refresh_token  body LogoutInput false "Refresh Token（可選，如果有就一併註銷）"
 // @Success 200 {object} LogoutSuccessResponse "登出成功"
-// @Failure 400 {object} utils.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
-// @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Token 缺失，error_code: 1006"
-// @Failure 401 {object} utils.ErrorAPIResponseTokenInvalid "Token 無效或過期，error_code: 1007"
+// @Failure 400 {object} util.ErrorAPIResponseInvalidInput "無效的輸入格式，error_code: 1001"
+// @Failure 401 {object} util.ErrorAPIResponseTokenMissing "Token 缺失，error_code: 1006"
+// @Failure 401 {object} util.ErrorAPIResponseTokenInvalid "Token 無效或過期，error_code: 1007"
 // @Router /v1/auth/logout [post]
 func LogoutUser(c *gin.Context) {
 	// 從 Header 中提取 Access Token（可能缺/過期/無效，仍然繼續流程）
@@ -410,30 +410,30 @@ func LogoutUser(c *gin.Context) {
 		// 即使 Refresh Token 無效，也不影響登出流程（因為可能過期或被清除了）
 	}
 
-	utils.SuccessResponse(c, "Logout successful", gin.H{})
+	util.SuccessResponse(c, "Logout successful", gin.H{})
 }
 
 // handleCreateUserError 處理創建用戶時的錯誤
 func handleCreateUserError(c *gin.Context, err error, operation string) {
 	switch {
-	case errors.Is(err, utils.ErrEmailExists):
-		c.Error(utils.NewConflictError("Email already registered", utils.CodeEmailExists, err))
-	case errors.Is(err, utils.ErrPasswordHashFail):
-		c.Error(utils.NewInternalServerError(
+	case errors.Is(err, util.ErrEmailExists):
+		c.Error(util.NewConflictError("Email already registered", util.CodeEmailExists, err))
+	case errors.Is(err, util.ErrPasswordHashFail):
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodePasswordHashFail,
+			util.CodePasswordHashFail,
 			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
 		))
-	case errors.Is(err, utils.ErrDatabaseError):
-		c.Error(utils.NewInternalServerError(
+	case errors.Is(err, util.ErrDatabaseError):
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDatabaseError,
+			util.CodeDatabaseError,
 			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
 		))
 	default:
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeInternalError,
+			util.CodeInternalError,
 			fmt.Errorf("failed to create user: operation=%s, error=%w", operation, err),
 		))
 	}
@@ -445,6 +445,6 @@ func validateContentType(c *gin.Context) bool {
 		return true
 	}
 
-	c.Error(utils.NewUnsupportedMediaTypeError("Unsupported media type. Expected application/json", utils.CodeUnsupportedMediaType, nil))
+	c.Error(util.NewUnsupportedMediaTypeError("Unsupported media type. Expected application/json", util.CodeUnsupportedMediaType, nil))
 	return false
 }

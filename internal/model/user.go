@@ -3,7 +3,7 @@ package model
 import (
 	"log"
 	db "restfulapi/internal/database"
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,7 +29,7 @@ func FindByUserId(userId int) (User, error) {
 
 	// 如果沒有找到使用者，回傳 `ErrUserNotFound`
 	if result.RowsAffected == 0 {
-		return User{}, utils.ErrUserNotFound
+		return User{}, util.ErrUserNotFound
 	}
 
 	// 其他錯誤（例如資料庫錯誤）
@@ -68,14 +68,14 @@ func IsEmailExists(email string, excludeUserID int) bool {
 func CreateUser(user User) (uint, error) {
 	// 檢查 Email 是否已存在
 	if IsEmailExists(user.Email, 0) {
-		return 0, utils.ErrEmailExists
+		return 0, util.ErrEmailExists
 	}
 
 	// 加密密碼
 	hashedPassword, err := hashPassword(user.Password)
 	if err != nil {
 		log.Println("Failed to hash password:", err)
-		return 0, utils.ErrPasswordHashFail
+		return 0, util.ErrPasswordHashFail
 	}
 
 	// 將加密後的密碼存入 User 結構
@@ -86,7 +86,7 @@ func CreateUser(user User) (uint, error) {
 
 	if result.Error != nil {
 		log.Println("Failed to create user:", result.Error)
-		return 0, utils.ErrDatabaseError
+		return 0, util.ErrDatabaseError
 	}
 
 	return user.ID, nil

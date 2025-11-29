@@ -9,7 +9,7 @@ import (
 	"restfulapi/internal/model"
 	repository "restfulapi/internal/repository"
 	service "restfulapi/internal/service"
-	"restfulapi/utils"
+	"restfulapi/internal/util"
 	"strconv"
 	"time"
 
@@ -38,7 +38,7 @@ type AdminUserListSuccessResponse struct {
 	Status  string            `json:"status" example:"success"`
 	Message string            `json:"message" example:"All users retrieved successfully"`
 	Data    AdminUserListData `json:"data"`
-	Meta    utils.MetaData    `json:"meta"`
+	Meta    util.MetaData    `json:"meta"`
 }
 
 // FindAllUsers - 取得所有使用者
@@ -48,9 +48,9 @@ type AdminUserListSuccessResponse struct {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} handler.AdminUserListSuccessResponse "成功取得使用者列表"
-// @Failure 401 {object} utils.ErrorAPIResponseTokenMissing "Unauthorized，error_code: 1006"
-// @Failure 403 {object} utils.ErrorAPIResponseForbidden "Forbidden，error_code: 1010"
-// @Failure 500 {object} utils.ErrorAPIResponseInternalServerError "Internal server error，error_code: 4001"
+// @Failure 401 {object} util.ErrorAPIResponseTokenMissing "Unauthorized，error_code: 1006"
+// @Failure 403 {object} util.ErrorAPIResponseForbidden "Forbidden，error_code: 1010"
+// @Failure 500 {object} util.ErrorAPIResponseInternalServerError "Internal server error，error_code: 4001"
 // @Router /v1/admin/users [get]
 func FindAllUsers(c *gin.Context) {
 	userRepo := repository.NewUserRepository()
@@ -79,14 +79,14 @@ func FindAllUsers(c *gin.Context) {
 		Items []AdminUserListItem `json:"items"`
 	}
 
-	utils.SuccessResponse(c, "All users retrieved successfully", AdminUserListResponse{Items: items})
+	util.SuccessResponse(c, "All users retrieved successfully", AdminUserListResponse{Items: items})
 }
 
 // FindByUserId - 取得單一使用者
 func FindByUserId(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
 		return
 	}
 
@@ -98,7 +98,7 @@ func FindByUserId(c *gin.Context) {
 	if err == nil {
 		var user model.User
 		if json.Unmarshal([]byte(cachedUser), &user) == nil {
-			utils.SuccessResponse(c, "User retrieved from cache", gin.H{
+			util.SuccessResponse(c, "User retrieved from cache", gin.H{
 				"id":    user.ID,
 				"name":  user.Name,
 				"email": user.Email,
@@ -110,13 +110,13 @@ func FindByUserId(c *gin.Context) {
 
 	user, err := model.FindByUserId(userId)
 	// 使用 `errors.Is()` 來區分不同的錯誤
-	if errors.Is(err, utils.ErrUserNotFound) {
-		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
+	if errors.Is(err, util.ErrUserNotFound) {
+		c.Error(util.NewNotFoundError("User not found", util.CodeUserNotFound, err))
 		return
 	} else if err != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDatabaseError,
+			util.CodeDatabaseError,
 			fmt.Errorf("failed to find user by id: userId=%d, error=%w", userId, err),
 		))
 		return
@@ -126,7 +126,7 @@ func FindByUserId(c *gin.Context) {
 	userJSON, _ := json.Marshal(user)
 	config.RedisClient.Set(ctx, cacheKey, userJSON, time.Minute*5)
 
-	utils.SuccessResponse(c, "User retrieved successfully", gin.H{
+	util.SuccessResponse(c, "User retrieved successfully", gin.H{
 		"id":    user.ID,
 		"name":  user.Name,
 		"email": user.Email,
@@ -139,16 +139,16 @@ func DeleteUser(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
 		return
 	}
 
 	// 嘗試刪除使用者
 	rowsAffected, deleteErr := model.DeleteUser(userId)
 	if deleteErr != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDeleteUserFailed,
+			util.CodeDeleteUserFailed,
 			fmt.Errorf("failed to delete user: userId=%d, error=%w", userId, deleteErr),
 		))
 		return
@@ -156,12 +156,12 @@ func DeleteUser(c *gin.Context) {
 
 	// 如果沒有影響任何行，代表用戶不存在
 	if rowsAffected == 0 {
-		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, nil))
+		c.Error(util.NewNotFoundError("User not found", util.CodeUserNotFound, nil))
 		return
 	}
 
 	// 刪除成功
-	utils.SuccessResponse(c, "User deleted successfully", nil)
+	util.SuccessResponse(c, "User deleted successfully", nil)
 }
 
 // UpdateUser - 更新使用者資訊
@@ -169,24 +169,24 @@ func UpdateUser(c *gin.Context) {
 	// 解析 `id`
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Error(utils.NewBadRequestError("Invalid user ID", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
 		return
 	}
 
 	var input model.UpdateUserInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
+		c.Error(util.NewBadRequestError("Invalid input", util.CodeInvalidInput, err))
 		return
 	}
 
 	user, err := model.FindByUserId(userId)
-	if errors.Is(err, utils.ErrUserNotFound) {
-		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
+	if errors.Is(err, util.ErrUserNotFound) {
+		c.Error(util.NewNotFoundError("User not found", util.CodeUserNotFound, err))
 		return
 	} else if err != nil {
-		c.Error(utils.NewInternalServerError(
+		c.Error(util.NewInternalServerError(
 			"Internal server error",
-			utils.CodeDatabaseError,
+			util.CodeDatabaseError,
 			fmt.Errorf("failed to find user by id: userId=%d, error=%w", userId, err),
 		))
 		return
@@ -196,7 +196,7 @@ func UpdateUser(c *gin.Context) {
 	if input.Email != "" && input.Email != user.Email {
 		exists := model.IsEmailExists(input.Email, userId)
 		if exists {
-			c.Error(utils.NewConflictError("Email already in use", utils.CodeEmailInUse, nil))
+			c.Error(util.NewConflictError("Email already in use", util.CodeEmailInUse, nil))
 			return
 		}
 	}
@@ -206,13 +206,13 @@ func UpdateUser(c *gin.Context) {
 	if result == 1 {
 		updatedUser, _ := model.FindByUserId(userId) // 查詢最新的資料
 
-		utils.SuccessResponse(c, "User updated successfully", gin.H{"user": updatedUser})
+		util.SuccessResponse(c, "User updated successfully", gin.H{"user": updatedUser})
 		return
 	}
 
-	c.Error(utils.NewInternalServerError(
+	c.Error(util.NewInternalServerError(
 		"Internal server error",
-		utils.CodeUpdateUserFailed,
+		util.CodeUpdateUserFailed,
 		fmt.Errorf("failed to update user: userId=%d, result=%d", userId, result),
 	))
 }
