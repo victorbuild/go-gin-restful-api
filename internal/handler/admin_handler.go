@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"restfulapi/internal/config"
-	"restfulapi/models"
+	"restfulapi/internal/model"
 	repository "restfulapi/repositories"
 	service "restfulapi/services"
 	"restfulapi/utils"
@@ -96,7 +96,7 @@ func FindByUserId(c *gin.Context) {
 	// 1 先查詢 Redis
 	cachedUser, err := config.RedisClient.Get(ctx, cacheKey).Result()
 	if err == nil {
-		var user models.User
+		var user model.User
 		if json.Unmarshal([]byte(cachedUser), &user) == nil {
 			utils.SuccessResponse(c, "User retrieved from cache", gin.H{
 				"id":    user.ID,
@@ -108,7 +108,7 @@ func FindByUserId(c *gin.Context) {
 		}
 	}
 
-	user, err := models.FindByUserId(userId)
+	user, err := model.FindByUserId(userId)
 	// 使用 `errors.Is()` 來區分不同的錯誤
 	if errors.Is(err, utils.ErrUserNotFound) {
 		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
@@ -144,7 +144,7 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	// 嘗試刪除使用者
-	rowsAffected, deleteErr := models.DeleteUser(userId)
+	rowsAffected, deleteErr := model.DeleteUser(userId)
 	if deleteErr != nil {
 		c.Error(utils.NewInternalServerError(
 			"Internal server error",
@@ -173,13 +173,13 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var input models.UpdateUserInput
+	var input model.UpdateUserInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.Error(utils.NewBadRequestError("Invalid input", utils.CodeInvalidInput, err))
 		return
 	}
 
-	user, err := models.FindByUserId(userId)
+	user, err := model.FindByUserId(userId)
 	if errors.Is(err, utils.ErrUserNotFound) {
 		c.Error(utils.NewNotFoundError("User not found", utils.CodeUserNotFound, err))
 		return
@@ -194,7 +194,7 @@ func UpdateUser(c *gin.Context) {
 
 	// 檢查 email 是否已經被其他用戶使用
 	if input.Email != "" && input.Email != user.Email {
-		exists := models.IsEmailExists(input.Email, userId)
+		exists := model.IsEmailExists(input.Email, userId)
 		if exists {
 			c.Error(utils.NewConflictError("Email already in use", utils.CodeEmailInUse, nil))
 			return
@@ -202,9 +202,9 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	// 更新會員
-	result := models.UpdateUser(user, input)
+	result := model.UpdateUser(user, input)
 	if result == 1 {
-		updatedUser, _ := models.FindByUserId(userId) // 查詢最新的資料
+		updatedUser, _ := model.FindByUserId(userId) // 查詢最新的資料
 
 		utils.SuccessResponse(c, "User updated successfully", gin.H{"user": updatedUser})
 		return

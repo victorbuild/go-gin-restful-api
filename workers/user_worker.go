@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"restfulapi/internal/config"
-	"restfulapi/models"
+	"restfulapi/internal/model"
 	"restfulapi/services"
 )
 
@@ -37,7 +37,7 @@ func StartUserWorker() {
 	log.Println("🚀 `user_worker` 開始監聽 user_created 事件...")
 
 	for msg := range msgs {
-		var user models.User
+		var user model.User
 		err := json.Unmarshal(msg.Body, &user)
 		if err != nil {
 			log.Println("❌ JSON 解析失敗:", err)

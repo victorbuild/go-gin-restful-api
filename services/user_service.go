@@ -1,7 +1,7 @@
 package services
 
 import (
-	"restfulapi/models"
+	"restfulapi/internal/model"
 	"restfulapi/repositories"
 )
 
@@ -17,7 +17,7 @@ func NewUserService(userRepo repositories.IUserRepository) *UserService {
 }
 
 // GetAllUsers 取得所有使用者，未來可在此加入其他邏輯或調用 repository 層
-func (s *UserService) GetAllUsers() []models.User {
+func (s *UserService) GetAllUsers() []model.User {
 	// 這裡暫時直接呼叫 models 層，後續可調整為調用 repository
 	return s.userRepo.FindAllUsers()
 }

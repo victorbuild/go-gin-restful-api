@@ -8,8 +8,8 @@ import (
 	"log"
 	"restfulapi/internal/config"
 	db "restfulapi/internal/database"
+	"restfulapi/internal/model"
 	"restfulapi/middlewares"
-	"restfulapi/models"
 	"restfulapi/pkg/logger"
 	"restfulapi/utils"
 	"strings"
@@ -100,14 +100,14 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	user := models.User{
+	user := model.User{
 		Name:     input.Name,
 		Email:    input.Email,
 		Password: input.Password,
 		Role:     "user", // 強制設定 role 為 "user"，防止惡意註冊成 admin
 	}
 
-	createUserId, createUserErr := models.CreateUser(user)
+	createUserId, createUserErr := model.CreateUser(user)
 
 	if createUserErr != nil {
 		handleCreateUserError(c, createUserErr, "register")
@@ -173,7 +173,7 @@ func LoginUser(c *gin.Context) {
 	}
 
 	// 查詢使用者
-	var user models.User
+	var user model.User
 	result := db.DbConnect.Where("email = ?", input.Email).First(&user)
 
 	// 檢查使用者是否存在
@@ -308,7 +308,7 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	// 查詢使用者以獲取 role
-	var user models.User
+	var user model.User
 	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
 	if result.RowsAffected == 0 {
 		c.Error(utils.NewUnauthorizedError("Invalid or expired refresh token", utils.CodeRefreshTokenInvalid, errors.New("user not found")))

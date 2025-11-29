@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"restfulapi/internal/config"
 	"restfulapi/internal/database"
+	"restfulapi/internal/model"
 	"restfulapi/middlewares"
-	"restfulapi/models"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
 	"restfulapi/workers"
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	fmt.Println("📌 Running database migration...")
-	database.DbConnect.AutoMigrate(&models.User{})
+	database.DbConnect.AutoMigrate(&model.User{})
 	fmt.Println("✅ Database migration completed!")
 
 	// **啟動 RabbitMQ Worker（使用 Goroutine）**

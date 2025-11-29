@@ -2,12 +2,12 @@ package repositories
 
 import (
 	db "restfulapi/internal/database"
-	"restfulapi/models"
+	"restfulapi/internal/model"
 )
 
 // IUserRepository 定義存取 User 資料的方法
 type IUserRepository interface {
-	FindAllUsers() []models.User
+	FindAllUsers() []model.User
 }
 
 // UserRepository 真實的 Repository（實作 IUserRepository）
@@ -19,8 +19,8 @@ func NewUserRepository() *UserRepository {
 }
 
 // FindAllUsers 取得所有使用者（透過 GORM 存取 DB）
-func (r *UserRepository) FindAllUsers() []models.User {
-	var users []models.User
+func (r *UserRepository) FindAllUsers() []model.User {
+	var users []model.User
 	db.DbConnect.Find(&users)
 	return users
 }

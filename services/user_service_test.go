@@ -1,7 +1,7 @@
 package services
 
 import (
-	"restfulapi/models"
+	"restfulapi/internal/model"
 	"restfulapi/repositories"
 	"testing"
 
@@ -15,8 +15,8 @@ type MockUserRepository struct{}
 var _ repositories.IUserRepository = (*MockUserRepository)(nil)
 
 // FindAllUsers 模擬回傳假資料
-func (m *MockUserRepository) FindAllUsers() []models.User {
-	return []models.User{
+func (m *MockUserRepository) FindAllUsers() []model.User {
+	return []model.User{
 		{ID: 1, Name: "Alice", Email: "alice@example.com", Role: "user"},
 		{ID: 2, Name: "Bob", Email: "bob@example.com", Role: "admin"},
 	}
