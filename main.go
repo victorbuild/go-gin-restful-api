@@ -17,9 +17,9 @@ import (
 	"restfulapi/internal/database"
 	"restfulapi/internal/middleware"
 	"restfulapi/internal/model"
+	"restfulapi/internal/router"
+	adminRoutes "restfulapi/internal/router/admin"
 	"restfulapi/internal/worker"
-	"restfulapi/routers"
-	adminRoutes "restfulapi/routers/admin"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -58,7 +58,7 @@ func main() {
 	r := gin.Default()
 
 	// 設定健康檢查路由（根目錄和 /health）
-	routers.SetupHealthRoutes(r)
+	router.SetupHealthRoutes(r)
 
 	// Swagger 文件
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -83,8 +83,8 @@ func main() {
 	adminRoutes.SetupAdminUserRoutes(v1)
 
 	// 一般使用者
-	//routers.SetupUserRoutes(v1) // 一般用戶 API
-	routers.SetupAuthRoutes(v1) // 註冊 / 登入 API
+	//router.SetupUserRoutes(v1) // 一般用戶 API
+	router.SetupAuthRoutes(v1) // 註冊 / 登入 API
 
 	// 啟動伺服器
 	r.Run(":8000")
