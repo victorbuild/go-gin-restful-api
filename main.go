@@ -16,10 +16,10 @@ import (
 	"restfulapi/internal/config"
 	"restfulapi/internal/database"
 	"restfulapi/internal/model"
+	"restfulapi/internal/worker"
 	"restfulapi/middlewares"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
-	"restfulapi/workers"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -50,9 +50,9 @@ func main() {
 	fmt.Println("✅ Database migration completed!")
 
 	// **啟動 RabbitMQ Worker（使用 Goroutine）**
-	go workers.StartUserWorker()
+	go worker.StartUserWorker()
 	// **啟動 Kafka Log Worker**
-	go workers.StartLogWorker()
+	go worker.StartLogWorker()
 
 	// 初始化 Gin 路由
 	r := gin.Default()
