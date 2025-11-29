@@ -13,7 +13,7 @@ package main
 // @description 輸入 "Bearer {token}" 進行身份驗證。可以在登入 API 取得 Token。
 import (
 	"fmt"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	"restfulapi/database"
 	"restfulapi/middlewares"
 	"restfulapi/models"

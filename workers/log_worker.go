@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 )
 
 func StartLogWorker() {

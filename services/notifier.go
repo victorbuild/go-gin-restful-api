@@ -3,7 +3,7 @@ package services
 import (
 	"log"
 	"net/smtp"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 )
 
 // Notifier 定義通知服務的介面，支援多種通知方式

@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

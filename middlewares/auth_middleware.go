@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"context"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	"restfulapi/utils"
 	"strings"
 

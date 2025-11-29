@@ -3,7 +3,7 @@ package logger
 import (
 	"fmt"
 	"log"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	"time"
 )
 

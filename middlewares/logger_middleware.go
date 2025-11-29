@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 )
 
 // LoggerMiddleware - 記錄 API 請求資訊並發送到 Kafka

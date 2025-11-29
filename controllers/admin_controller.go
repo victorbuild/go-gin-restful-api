@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	"restfulapi/models"
 	repository "restfulapi/repositories"
 	service "restfulapi/services"

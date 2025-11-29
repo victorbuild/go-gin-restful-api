@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	"restfulapi/models"
 	"restfulapi/services"
 )

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"restfulapi/config"
+	"restfulapi/internal/config"
 	db "restfulapi/database"
 	"restfulapi/middlewares"
 	"restfulapi/models"
