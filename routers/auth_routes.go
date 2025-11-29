@@ -2,7 +2,7 @@ package routers
 
 import (
 	"restfulapi/internal/handler"
-	"restfulapi/middlewares"
+	"restfulapi/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,5 +13,5 @@ func SetupAuthRoutes(r *gin.RouterGroup) {
 	auth.POST("/register", handler.RegisterUser)
 	auth.POST("/login", handler.LoginUser)
 	auth.POST("/refresh", handler.RefreshToken)
-	auth.POST("/logout", middlewares.RequireAuth(), handler.LogoutUser)
+	auth.POST("/logout", middleware.RequireAuth(), handler.LogoutUser)
 }

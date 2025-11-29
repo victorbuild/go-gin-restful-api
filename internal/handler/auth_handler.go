@@ -8,9 +8,9 @@ import (
 	"log"
 	"restfulapi/internal/config"
 	db "restfulapi/internal/database"
+	"restfulapi/internal/middleware"
 	"restfulapi/internal/model"
 	"restfulapi/internal/util"
-	"restfulapi/middlewares"
 	"restfulapi/pkg/logger"
 	"strings"
 	"time"
@@ -281,7 +281,7 @@ func RefreshToken(c *gin.Context) {
 		// Rotation: 用過即失效
 		err := config.RedisClient.Set(ctx, refreshTokenBlacklistKey, "1", refreshRemainingTime).Err()
 		if err != nil {
-			traceID := middlewares.GetTraceID(c)
+			traceID := middleware.GetTraceID(c)
 			logger.LogError("refresh-rotation", traceID, err)
 		}
 	}
@@ -375,7 +375,7 @@ func LogoutUser(c *gin.Context) {
 						blacklistKey := "access_token:blacklist:" + tokenString
 						err := config.RedisClient.Set(ctx, blacklistKey, "1", remainingTime).Err()
 						if err != nil {
-							traceID := middlewares.GetTraceID(c)
+							traceID := middleware.GetTraceID(c)
 							logger.LogError("logout", traceID, err)
 						}
 					}
@@ -400,7 +400,7 @@ func LogoutUser(c *gin.Context) {
 						refreshBlacklistKey := "refresh_token:blacklist:" + input.RefreshToken
 						err := config.RedisClient.Set(ctx, refreshBlacklistKey, "1", refreshRemainingTime).Err()
 						if err != nil {
-							traceID := middlewares.GetTraceID(c)
+							traceID := middleware.GetTraceID(c)
 							logger.LogError("logout", traceID, err)
 						}
 					}

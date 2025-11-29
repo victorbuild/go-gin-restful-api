@@ -15,9 +15,9 @@ import (
 	"fmt"
 	"restfulapi/internal/config"
 	"restfulapi/internal/database"
+	"restfulapi/internal/middleware"
 	"restfulapi/internal/model"
 	"restfulapi/internal/worker"
-	"restfulapi/middlewares"
 	"restfulapi/routers"
 	adminRoutes "restfulapi/routers/admin"
 
@@ -67,16 +67,16 @@ func main() {
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// **加入 Trace ID Middleware
-	r.Use(middlewares.TraceIDMiddleware())
+	r.Use(middleware.TraceIDMiddleware())
 
 	// **加入 Logger Middleware，確保所有請求都記錄到 Kafka**
-	r.Use(middlewares.LoggerMiddleware())
+	r.Use(middleware.LoggerMiddleware())
 
 	// **加入 Prometheus Middleware，記錄 API 指標**
-	r.Use(middlewares.PrometheusMiddleware())
+	r.Use(middleware.PrometheusMiddleware())
 
 	// 錯誤處理 middleware（必須放在最後）
-	r.Use(middlewares.ErrorHandler())
+	r.Use(middleware.ErrorHandler())
 
 	v1 := r.Group("/v1")
 	// 管理員 API
