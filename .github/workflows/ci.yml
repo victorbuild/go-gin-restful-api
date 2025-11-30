@@ -28,8 +28,19 @@ jobs:
     - name: Build
       run: go build -v ./...
     
-    - name: Test
-      run: go test -v ./...
+    - name: Test with coverage
+      run: go test -v -coverprofile=coverage.out ./...
+    
+    - name: Display coverage
+      run: |
+        echo "## 📊 Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+        echo "**Total Coverage: $TOTAL_COVERAGE**" >> $GITHUB_STEP_SUMMARY
     
     - name: Run go vet
       run: go vet ./...
