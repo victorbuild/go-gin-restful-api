@@ -23,7 +23,7 @@ jobs:
       run: go install github.com/swaggo/swag/cmd/swag@latest
     
     - name: Generate Swagger docs
-      run: swag init
+      run: swag init -g cmd/api/main.go
     
     - name: Build
       run: go build -v ./...
