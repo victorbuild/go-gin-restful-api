@@ -4,7 +4,7 @@
 
 ## 使用技術
 
-需要有這些環境，必且在 env 設定。
+需要有這些環境，並在 env 設定。
 
 | 類別        | 技術與框架                |
 |-----------|----------------------|
@@ -46,7 +46,7 @@ go run github.com/swaggo/swag/cmd/swag@latest init
 執行以下指令
 
 ```bash
-go run . 
+go run ./cmd/api
 ```
 
 啟動後，可以透過以下網址訪問 API 文檔：
@@ -57,23 +57,38 @@ go run .
 
 ## 專案結構
 
+本專案採用 **Go 標準專案結構**（cmd/internal/pkg），符合 Go 社群最佳實踐：
+
 ```
 go-gin-restful-api/
-│── config/           # 配置（環境變數、資料庫、JWT、Kafka、Redis 等）
-│── controllers/      # 控制器（處理 HTTP 請求）
-│── database/         # 資料庫連線與初始化
-│── middlewares/      # 中介層（JWT 驗證、日誌、錯誤處理、監控）
-│── models/           # 資料庫模型
-│── pkg/              # 可復用的套件（logger 等）
-│── repositories/     # 資料存取層
-│── routers/          # 路由定義
-│── services/         # 商業邏輯層（含單元測試）
-│── tests/            # 壓力測試、整合測試
-│── utils/            # 工具函式（回應格式、錯誤處理）
-│── workers/          # 背景任務處理
-│── main.go           # 應用程式入口
-│── go.mod            # Go Module 依賴管理
+├── cmd/
+│   └── api/
+│       └── main.go              # 應用程式入口點
+├── internal/                     # 內部套件（不對外公開）
+│   ├── config/                   # 配置（環境變數、資料庫、JWT、Kafka、Redis 等）
+│   ├── database/                 # 資料庫連線與初始化
+│   ├── handler/                  # HTTP 處理器（處理 HTTP 請求）
+│   ├── middleware/               # 中介層（JWT 驗證、日誌、錯誤處理、監控）
+│   ├── model/                    # 資料庫模型
+│   ├── repository/               # 資料存取層
+│   ├── router/                   # 路由定義
+│   ├── service/                  # 商業邏輯層（含單元測試）
+│   ├── util/                     # 工具函式（回應格式、錯誤處理）
+│   └── worker/                   # 背景任務處理
+├── pkg/                          # 可復用的公開套件
+│   └── logger/                   # 日誌工具
+├── docs/                         # Swagger 文檔
+├── tests/                        # 壓力測試、整合測試
+└── go.mod                        # Go Module 依賴管理
 ```
+
+### 結構說明
+
+- **`cmd/`**: 應用程式入口點，每個可執行的應用程式都有自己的子目錄
+- **`internal/`**: 內部套件，只能被同一個專案內的程式碼引用，不對外公開
+- **`pkg/`**: 可復用的公開套件，可以被外部專案引用
+- **`docs/`**: 自動產生的 API 文檔
+- **`tests/`**: 測試腳本和測試資料
 
 ## 系統架構
 
@@ -145,16 +160,6 @@ sequenceDiagram
 **執行所有單元測試：**
 ```bash
 go test ./...
-```
-
-**執行特定 package 的測試：**
-```bash
-go test ./services/...
-```
-
-**執行測試並顯示詳細輸出：**
-```bash
-go test ./... -v
 ```
 
 ### 壓力測試
