@@ -35,7 +35,7 @@ go mod tidy
 **第一次使用或更新 API 註解後，需要使用指令產生 Swagger 文檔：**
 
 ```bash
-go run github.com/swaggo/swag/cmd/swag@latest init
+go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go
 ```
 
 這將會在 `docs/` 目錄下產生 swagger.json、swagger.yaml 和 docs.go 檔案。
