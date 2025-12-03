@@ -5,9 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -21,39 +19,6 @@ func setupTestContext() (*gin.Context, *httptest.ResponseRecorder) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	return c, w
-}
-
-// TestGenerateMetaData 測試 generateMetaData 函數（透過其他函數間接測試）
-func TestGenerateMetaData(t *testing.T) {
-	c, w := setupTestContext()
-
-	// 透過 SuccessResponse 間接測試 generateMetaData
-	SuccessResponse(c, "test", nil)
-
-	// 驗證 HTTP 狀態碼
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	// 解析回應內容
-	var response APIResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "應該能成功解析 JSON")
-
-	// 驗證 MetaData 有被設定
-	assert.NotNil(t, response.Meta, "Meta 不應該為 nil")
-
-	// 驗證 Timestamp 不是空的
-	assert.NotEmpty(t, response.Meta.Timestamp, "Timestamp 不應該為空")
-
-	// 驗證時間戳格式是否為 RFC3339
-	_, err = time.Parse(time.RFC3339, response.Meta.Timestamp)
-	assert.NoError(t, err, "時間戳格式應該為 RFC3339")
-
-	// 驗證時間戳是 UTC 時間（RFC3339 格式應該以 Z 結尾或包含時區）
-	assert.True(t,
-		strings.HasSuffix(response.Meta.Timestamp, "Z") ||
-			strings.Contains(response.Meta.Timestamp, "+") ||
-			strings.Contains(response.Meta.Timestamp, "-"),
-		"時間戳應該包含時區資訊（UTC 或時區偏移）")
 }
 
 // TestSuccessResponse 測試成功回應
@@ -98,11 +63,6 @@ func TestSuccessResponse(t *testing.T) {
 			} else {
 				assert.Nil(t, response.Data)
 			}
-			assert.NotEmpty(t, response.Meta.Timestamp)
-
-			// 驗證時間戳格式是否為 RFC3339
-			_, err = time.Parse(time.RFC3339, response.Meta.Timestamp)
-			assert.NoError(t, err, "時間戳格式應該為 RFC3339")
 		})
 	}
 }
@@ -144,7 +104,6 @@ func TestCreatedResponse(t *testing.T) {
 			} else {
 				assert.Nil(t, response.Data)
 			}
-			assert.NotEmpty(t, response.Meta.Timestamp)
 		})
 	}
 }
@@ -208,7 +167,6 @@ func TestErrorResponse(t *testing.T) {
 			assert.Equal(t, "error", response.Status)
 			assert.Equal(t, tt.message, response.Message)
 			assert.Equal(t, tt.errorCode, response.ErrorCode)
-			assert.NotEmpty(t, response.Meta.Timestamp)
 		})
 	}
 }
@@ -309,9 +267,6 @@ func TestErrorAPIResponse_MarshalJSON(t *testing.T) {
 				Status:    "error",
 				Message:   "Test error",
 				ErrorCode: CodeInvalidInput,
-				Meta: MetaData{
-					Timestamp: "2024-01-01T00:00:00Z",
-				},
 			},
 		},
 	}
@@ -327,22 +282,6 @@ func TestErrorAPIResponse_MarshalJSON(t *testing.T) {
 			assert.Equal(t, tt.response.Status, result.Status)
 			assert.Equal(t, tt.response.Message, result.Message)
 			assert.Equal(t, tt.response.ErrorCode, result.ErrorCode)
-			assert.Equal(t, tt.response.Meta.Timestamp, result.Meta.Timestamp)
 		})
 	}
-}
-
-// TestMetaData 測試 MetaData 結構
-func TestMetaData(t *testing.T) {
-	meta := MetaData{
-		Timestamp: "2024-01-01T00:00:00Z",
-	}
-
-	data, err := json.Marshal(meta)
-	assert.NoError(t, err)
-
-	var result MetaData
-	err = json.Unmarshal(data, &result)
-	assert.NoError(t, err)
-	assert.Equal(t, meta.Timestamp, result.Timestamp)
 }
