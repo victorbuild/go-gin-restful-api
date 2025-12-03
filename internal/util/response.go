@@ -11,14 +11,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// Pagination 定義分頁資訊
-type Pagination struct {
-	Total      int `json:"total"`
-	Page       int `json:"page"`
-	PerPage    int `json:"per_page"`
-	TotalPages int `json:"total_pages"`
-}
-
 // MetaData 提供額外資訊
 type MetaData struct {
 	Timestamp string `json:"timestamp"`
@@ -276,20 +268,6 @@ func CreatedResponse(c *gin.Context, message string, data interface{}) {
 		Meta:    generateMetaData(c),
 	}
 	c.JSON(http.StatusCreated, response)
-}
-
-// ListResponse 成功回應（列表 + 分頁）
-func ListResponse(c *gin.Context, message string, items interface{}, pagination Pagination) {
-	response := APIResponse{
-		Status:  "success",
-		Message: message,
-		Data: gin.H{
-			"items":      items,
-			"pagination": pagination,
-		},
-		Meta: generateMetaData(c),
-	}
-	c.JSON(http.StatusOK, response)
 }
 
 // ErrorResponse 失敗回應
