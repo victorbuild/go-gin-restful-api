@@ -5,16 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
-
-// MetaData 提供額外資訊
-type MetaData struct {
-	Timestamp string `json:"timestamp"`
-}
 
 // APIResponse 定義標準 API 回應結構
 type APIResponse struct {
@@ -29,9 +23,6 @@ type APIResponse struct {
 
 	// 錯誤代碼 (成功時省略)
 	ErrorCode int `json:"error_code,omitempty" example:"1000"`
-
-	// Meta 資訊 (例如 API 版本、時間戳等)
-	Meta MetaData `json:"meta"`
 }
 
 // SuccessAPIResponse 定義成功回應結構（包含 data 欄位）
@@ -44,9 +35,6 @@ type SuccessAPIResponse struct {
 
 	// Data 主要的回應數據
 	Data interface{} `json:"data"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponse 定義錯誤回應結構
@@ -60,9 +48,6 @@ type ErrorAPIResponse struct {
 
 	// ErrorCode 錯誤代碼
 	ErrorCode int `json:"error_code" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseUnsupportedMediaType 定義 415 不支援媒體類型錯誤回應結構
@@ -76,9 +61,6 @@ type ErrorAPIResponseUnsupportedMediaType struct {
 
 	// ErrorCode 錯誤代碼: 1000
 	ErrorCode int `json:"error_code" example:"1000" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseEmailExists 定義 409 Email 重複錯誤回應結構
@@ -92,9 +74,6 @@ type ErrorAPIResponseEmailExists struct {
 
 	// ErrorCode 錯誤代碼: 1003
 	ErrorCode int `json:"error_code" example:"1003" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseInvalidInput 定義 400 無效輸入錯誤回應結構
@@ -108,9 +87,6 @@ type ErrorAPIResponseInvalidInput struct {
 
 	// ErrorCode 錯誤代碼: 1001
 	ErrorCode int `json:"error_code" example:"1001" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseMissingFields 定義 400 缺少必填欄位錯誤回應結構
@@ -124,9 +100,6 @@ type ErrorAPIResponseMissingFields struct {
 
 	// ErrorCode 錯誤代碼: 1002
 	ErrorCode int `json:"error_code" example:"1002" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseInvalidCredentials 定義 401 帳號密碼錯誤回應結構
@@ -140,9 +113,6 @@ type ErrorAPIResponseInvalidCredentials struct {
 
 	// ErrorCode 錯誤代碼: 1004
 	ErrorCode int `json:"error_code" example:"1004" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseTokenMissing 定義 401 Token 缺失錯誤回應結構
@@ -156,9 +126,6 @@ type ErrorAPIResponseTokenMissing struct {
 
 	// ErrorCode 錯誤代碼: 1006
 	ErrorCode int `json:"error_code" example:"1006" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseTokenInvalid 定義 401 Token 無效錯誤回應結構
@@ -172,9 +139,6 @@ type ErrorAPIResponseTokenInvalid struct {
 
 	// ErrorCode 錯誤代碼: 1007
 	ErrorCode int `json:"error_code" example:"1007" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseRefreshTokenInvalid 定義 401 Refresh Token 無效錯誤回應結構
@@ -188,9 +152,6 @@ type ErrorAPIResponseRefreshTokenInvalid struct {
 
 	// ErrorCode 錯誤代碼: 1008
 	ErrorCode int `json:"error_code" example:"1008" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseInternalServerError 定義 500 伺服器內部錯誤回應結構
@@ -204,9 +165,6 @@ type ErrorAPIResponseInternalServerError struct {
 
 	// ErrorCode 錯誤代碼: 4001
 	ErrorCode int `json:"error_code" example:"4001" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // ErrorAPIResponseForbidden 定義 403 禁止存取錯誤回應結構
@@ -221,31 +179,19 @@ type ErrorAPIResponseForbidden struct {
 
 	// ErrorCode 錯誤代碼: 1010
 	ErrorCode int `json:"error_code" example:"1010" swaggertype:"integer"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta MetaData `json:"meta"`
 }
 
 // MarshalJSON 自訂 JSON 序列化以確保欄位順序
 func (e ErrorAPIResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Status    string   `json:"status"`
-		Message   string   `json:"message"`
-		ErrorCode int      `json:"error_code"`
-		Meta      MetaData `json:"meta"`
+		Status    string `json:"status"`
+		Message   string `json:"message"`
+		ErrorCode int    `json:"error_code"`
 	}{
 		Status:    e.Status,
 		Message:   e.Message,
 		ErrorCode: e.ErrorCode,
-		Meta:      e.Meta,
 	})
-}
-
-// 產生 MetaData
-func generateMetaData(c *gin.Context) MetaData {
-	return MetaData{
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-	}
 }
 
 // SuccessResponse 成功回應（單筆資料）
@@ -254,7 +200,6 @@ func SuccessResponse(c *gin.Context, message string, data interface{}) {
 		Status:  "success",
 		Message: message,
 		Data:    data,
-		Meta:    generateMetaData(c),
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -265,7 +210,6 @@ func CreatedResponse(c *gin.Context, message string, data interface{}) {
 		Status:  "success",
 		Message: message,
 		Data:    data,
-		Meta:    generateMetaData(c),
 	}
 	c.JSON(http.StatusCreated, response)
 }
@@ -276,7 +220,6 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, errorCode int
 		Status:    "error",
 		Message:   message,
 		ErrorCode: errorCode,
-		Meta:      generateMetaData(c),
 	}
 	c.JSON(statusCode, response)
 }

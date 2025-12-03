@@ -59,9 +59,6 @@ type LogoutSuccessResponse struct {
 
 	// Data 主要的回應數據（空對象）
 	Data LogoutUserResponse `json:"data"`
-
-	// Meta Meta 資訊 (例如 API 版本、請求 ID 等)
-	Meta util.MetaData `json:"meta"`
 }
 
 // RefreshTokenInput 定義刷新 Token 輸入結構
