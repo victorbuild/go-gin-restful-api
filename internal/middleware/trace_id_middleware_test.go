@@ -99,4 +99,3 @@ func TestGetTraceID(t *testing.T) {
 		})
 	}
 }
-
