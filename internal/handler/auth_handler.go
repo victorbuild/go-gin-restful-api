@@ -115,7 +115,7 @@ func RegisterUser(c *gin.Context) {
 
 	// 定義 RabbitMQ 訊息結構（不包含密碼）
 	type UserCreatedMessage struct {
-		ID    uint   `json:"id"`
+		ID    uint64 `json:"id"`
 		Name  string `json:"name"`
 		Email string `json:"email"`
 		Role  string `json:"role"`
@@ -304,9 +304,11 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
+	userIDUint64 := uint64(userID)
+
 	// 查詢使用者以獲取 role
 	var user model.User
-	result := db.DbConnect.Where("id = ?", uint(userID)).First(&user)
+	result := db.DbConnect.Where("id = ?", userIDUint64).First(&user)
 	if result.RowsAffected == 0 {
 		c.Error(util.NewUnauthorizedError("Invalid or expired refresh token", util.CodeRefreshTokenInvalid, errors.New("user not found")))
 		return
@@ -316,7 +318,7 @@ func RefreshToken(c *gin.Context) {
 		c.Error(util.NewInternalServerError(
 			"Internal server error",
 			util.CodeDatabaseError,
-			fmt.Errorf("failed to refresh token: userId=%d, error=%w", uint(userID), result.Error),
+			fmt.Errorf("failed to refresh token: userId=%d, error=%w", userIDUint64, result.Error),
 		))
 		return
 	}

@@ -20,7 +20,7 @@ var JWTConfig = struct {
 }
 
 // GenerateTokens 產生 Access Token & Refresh Token
-func GenerateTokens(userID uint, email, role string) (string, string, error) {
+func GenerateTokens(userID uint64, email, role string) (string, string, error) {
 	// 建立 Access Token
 	accessClaims := jwt.MapClaims{
 		"sub":   userID,

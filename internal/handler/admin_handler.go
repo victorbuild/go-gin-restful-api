@@ -58,7 +58,7 @@ func FindAllUsers(c *gin.Context) {
 
 	// 以 DTO struct 確保欄位順序
 	type AdminUserListItem struct {
-		ID    uint   `json:"id"`
+		ID    uint64 `json:"id"`
 		Name  string `json:"name"`
 		Email string `json:"email"`
 		Role  string `json:"role"`
@@ -83,14 +83,14 @@ func FindAllUsers(c *gin.Context) {
 
 // FindByUserId - 取得單一使用者
 func FindByUserId(c *gin.Context) {
-	userId, err := strconv.Atoi(c.Param("id"))
+	userId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
 		return
 	}
 
 	ctx := context.Background()
-	cacheKey := "user:" + strconv.Itoa(userId)
+	cacheKey := "user:" + strconv.FormatUint(userId, 10)
 
 	// 1 先查詢 Redis
 	cachedUser, err := config.RedisClient.Get(ctx, cacheKey).Result()
@@ -135,7 +135,7 @@ func FindByUserId(c *gin.Context) {
 
 // DeleteUser - 刪除使用者
 func DeleteUser(c *gin.Context) {
-	userId, err := strconv.Atoi(c.Param("id"))
+	userId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 
 	if err != nil {
 		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
@@ -166,7 +166,7 @@ func DeleteUser(c *gin.Context) {
 // UpdateUser - 更新使用者資訊
 func UpdateUser(c *gin.Context) {
 	// 解析 `id`
-	userId, err := strconv.Atoi(c.Param("id"))
+	userId, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(util.NewBadRequestError("Invalid user ID", util.CodeInvalidInput, err))
 		return

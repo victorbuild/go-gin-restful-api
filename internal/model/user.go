@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	ID       uint   `gorm:"primaryKey" json:"id"`
+	ID       uint64 `gorm:"primaryKey;type:bigserial" json:"id"`
 	Name     string `gorm:"size:255" json:"name"`
 	Password string `gorm:"size:255" json:"password"`
 	Email    string `gorm:"uniqueIndex;size:255" json:"email"`
@@ -23,7 +23,7 @@ type UpdateUserInput struct {
 	Email    string `json:"email" example:"victor@example.com"` // email
 } // @name RegisterUserInput
 
-func FindByUserId(userId int) (User, error) {
+func FindByUserId(userId uint64) (User, error) {
 	var user User
 	result := db.DbConnect.Where("id = ?", userId).First(&user)
 
@@ -50,7 +50,7 @@ func hashPassword(password string) (string, error) {
 }
 
 // IsEmailExists - 確認 `email` 是否已存在（可選擇排除 `excludeUserID`）
-func IsEmailExists(email string, excludeUserID int) bool {
+func IsEmailExists(email string, excludeUserID uint64) bool {
 	var count int64
 
 	// 建立查詢條件
@@ -65,7 +65,7 @@ func IsEmailExists(email string, excludeUserID int) bool {
 	return count > 0
 }
 
-func CreateUser(user User) (uint, error) {
+func CreateUser(user User) (uint64, error) {
 	// 檢查 Email 是否已存在
 	if IsEmailExists(user.Email, 0) {
 		return 0, util.ErrEmailExists
@@ -92,7 +92,7 @@ func CreateUser(user User) (uint, error) {
 	return user.ID, nil
 }
 
-func DeleteUser(userId int) (int64, error) {
+func DeleteUser(userId uint64) (int64, error) {
 	result := db.DbConnect.Delete(&User{}, userId)
 
 	if result.Error != nil {
