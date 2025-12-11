@@ -83,7 +83,7 @@ func main() {
 	adminRoutes.SetupAdminUserRoutes(v1)
 
 	// 一般使用者
-	//router.SetupUserRoutes(v1) // 一般用戶 API
+	router.SetupUserRoutes(v1) // 一般用戶 API
 	router.SetupAuthRoutes(v1) // 註冊 / 登入 API
 
 	// 啟動伺服器
