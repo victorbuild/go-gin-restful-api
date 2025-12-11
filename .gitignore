@@ -8,6 +8,8 @@ gin.log
 docs/docs.go
 docs/swagger.json
 docs/swagger.yaml
+
+# Ignore TODO and internal documentation (but keep API reference docs)
 docs/_todo/
 
 # Test coverage files

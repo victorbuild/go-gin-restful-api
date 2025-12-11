@@ -16,12 +16,14 @@ type User struct {
 	Role     string `gorm:"size:255" json:"role"`
 }
 
-// UpdateUserInput 用於更新註冊
+// UpdateUserInput 用於更新使用者資訊
+// @Description 更新使用者資訊的輸入結構，所有欄位都是可選的
+// swagger:model UpdateUserInput
 type UpdateUserInput struct {
-	Name     string `json:"name" example:"Victor"`              // 姓名
-	Password string `json:"password" example:"123456"`          // 密碼
-	Email    string `json:"email" example:"victor@example.com"` // email
-} // @name RegisterUserInput
+	Name     string `json:"name,omitempty" example:"Victor"`              // 姓名（可選）
+	Password string `json:"password,omitempty" example:"123456"`          // 密碼（可選）
+	Email    string `json:"email,omitempty" example:"victor@example.com"` // email（可選）
+}
 
 func FindByUserId(userId uint64) (User, error) {
 	var user User

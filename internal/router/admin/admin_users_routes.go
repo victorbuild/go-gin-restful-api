@@ -12,7 +12,7 @@ func SetupAdminUserRoutes(r *gin.RouterGroup) {
 	admin := r.Group("/admin/users")
 	admin.Use(middleware.RequireAuth(), middleware.RequireAdmin())
 	{
-		admin.POST("/", handler.RegisterUser)
+		admin.POST("/", handler.AdminCreateUser)
 		admin.GET("/", handler.FindAllUsers)
 		admin.GET("/:id", handler.FindByUserId)
 		admin.DELETE("/:id", handler.DeleteUser)

@@ -20,6 +20,8 @@ import (
 )
 
 // RegisterUserInput 定義註冊使用者輸入結構
+// @Description 註冊使用者資訊的輸入結構
+// swagger:model RegisterUserInput
 type RegisterUserInput struct {
 	Name     string `json:"name" example:"Victor" binding:"required"`                    // 姓名
 	Email    string `json:"email" example:"victor@example.com" binding:"required,email"` // Email

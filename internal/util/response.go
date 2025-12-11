@@ -38,16 +38,33 @@ type SuccessAPIResponse struct {
 }
 
 // ErrorAPIResponse 定義錯誤回應結構
-// @Description 錯誤回應格式，error_code 視情況而定
+// @Description 錯誤回應格式。message 會根據不同的 error_code 而有所不同，error_code 的詳細說明請參考：https://github.com/victorbuild/go-gin-restful-api/blob/master/docs/API_ERROR_CODES.md
+// swagger:model ErrorAPIResponse
 type ErrorAPIResponse struct {
 	// Status 狀態: "error"
 	Status string `json:"status" example:"error"`
 
-	// Message 訊息描述
-	Message string `json:"message" example:"Email already registered"`
+	// Message 錯誤訊息描述，會根據不同的 error_code 而有所不同
+	// 常見訊息範例：
+	// - error_code 1001: "Invalid input"（無效輸入）
+	// - error_code 1005: "User not found"（使用者不存在）
+	// - error_code 1006: "Unauthorized"（Token 缺失）
+	// - error_code 1007: "Invalid token"（Token 無效）
+	// - error_code 1010: "Forbidden"（權限不足）
+	// - error_code 4001: "Internal server error"（伺服器內部錯誤）
+	// 完整錯誤碼與訊息對應請參考錯誤代碼文檔
+	Message string `json:"message" example:"Error message varies by error_code"`
 
-	// ErrorCode 錯誤代碼
-	ErrorCode int `json:"error_code" swaggertype:"integer"`
+	// ErrorCode 錯誤代碼，詳細說明請參考錯誤代碼文檔
+	// 常見錯誤碼：
+	// - 1001: 無效輸入 (Invalid Input)
+	// - 1005: 資源不存在 (Not Found)
+	// - 1006: Token 缺失 (Token Missing)
+	// - 1007: Token 無效 (Token Invalid)
+	// - 1010: 權限不足 (Forbidden)
+	// - 4001: 伺服器內部錯誤 (Internal Server Error)
+	// 完整錯誤碼列表：https://github.com/victorbuild/go-gin-restful-api/blob/master/docs/API_ERROR_CODES.md
+	ErrorCode int `json:"error_code" example:"1001" swaggertype:"integer"`
 }
 
 // ErrorAPIResponseUnsupportedMediaType 定義 415 不支援媒體類型錯誤回應結構
