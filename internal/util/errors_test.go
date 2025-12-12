@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -349,6 +350,61 @@ func TestNewUnsupportedMediaTypeError(t *testing.T) {
 			assert.Equal(t, tt.expectedCode, appError.Code)
 			assert.Equal(t, tt.expectedMsg, appError.Message)
 			assert.Equal(t, tt.err, appError.Err)
+		})
+	}
+}
+
+// TestValidatePasswordLength 測試密碼長度驗證
+func TestValidatePasswordLength(t *testing.T) {
+	tests := []struct {
+		name        string
+		password    string
+		expectError bool
+		errorCode   int
+	}{
+		{
+			name:        "正常長度密碼",
+			password:    "normalPassword123",
+			expectError: false,
+		},
+		{
+			name:        "72 字元密碼（達到限制）",
+			password:    strings.Repeat("a", 72),
+			expectError: false,
+		},
+		{
+			name:        "73 字元密碼（超過限制）",
+			password:    strings.Repeat("a", 73),
+			expectError: true,
+			errorCode:   CodePasswordTooLong,
+		},
+		{
+			name:        "100 字元密碼（超過限制）",
+			password:    strings.Repeat("a", 100),
+			expectError: true,
+			errorCode:   CodePasswordTooLong,
+		},
+		{
+			name:        "空密碼（不處理，由其他驗證處理）",
+			password:    "",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePasswordLength(tt.password)
+
+			if tt.expectError {
+				assert.NotNil(t, err, "應該回傳錯誤")
+				if err != nil {
+					assert.Equal(t, http.StatusBadRequest, err.StatusCode)
+					assert.Equal(t, tt.errorCode, err.Code)
+					assert.Contains(t, err.Message, "Password too long")
+				}
+			} else {
+				assert.Nil(t, err, "不應該回傳錯誤")
+			}
 		})
 	}
 }

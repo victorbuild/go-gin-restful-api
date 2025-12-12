@@ -25,7 +25,7 @@ import (
 type RegisterUserInput struct {
 	Name     string `json:"name" example:"Victor" binding:"required"`                    // 姓名
 	Email    string `json:"email" example:"victor@example.com" binding:"required,email"` // Email
-	Password string `json:"password" example:"123456" binding:"required"`                // 密碼
+	Password string `json:"password" example:"123456" binding:"required,max=72"`         // 密碼（最多 72 字元，bcrypt 限制）
 }
 
 // RegisterUserResponse 定義註冊成功回傳的資料結構
@@ -38,7 +38,7 @@ type RegisterUserResponse struct {
 // LoginUserInput 定義登入使用者輸入結構
 type LoginUserInput struct {
 	Email    string `json:"email" example:"victor@example.com" binding:"required,email"` // Email
-	Password string `json:"password" example:"123456" binding:"required"`                // 密碼
+	Password string `json:"password" example:"123456" binding:"required,max=72"`         // 密碼（最多 72 字元，bcrypt 限制）
 }
 
 // LoginUserResponse 定義登入成功回傳的資料結構
@@ -96,6 +96,12 @@ func RegisterUser(c *gin.Context) {
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
 		util.ValidationErrorResponse(c, err)
+		return
+	}
+
+	// 驗證密碼長度（bcrypt 限制 72 字元，避免 CVE-2025-22228 相關問題）
+	if err := util.ValidatePasswordLength(input.Password); err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -168,6 +174,12 @@ func LoginUser(c *gin.Context) {
 	// 解析請求 JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.Error(util.NewBadRequestError("Invalid input", util.CodeInvalidInput, err))
+		return
+	}
+
+	// 驗證密碼長度（bcrypt 限制 72 字元，避免 CVE-2025-22228 相關問題）
+	if err := util.ValidatePasswordLength(input.Password); err != nil {
+		c.Error(err)
 		return
 	}
 

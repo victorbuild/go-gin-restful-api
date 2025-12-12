@@ -238,6 +238,12 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	// 驗證密碼長度（如果提供了密碼，bcrypt 限制 72 字元，避免 CVE-2025-22228 相關問題）
+	if err := util.ValidatePasswordLength(input.Password); err != nil {
+		c.Error(err)
+		return
+	}
+
 	user, err := model.FindByUserId(userId)
 	if errors.Is(err, util.ErrUserNotFound) {
 		c.Error(util.NewNotFoundError("User not found", util.CodeUserNotFound, err))

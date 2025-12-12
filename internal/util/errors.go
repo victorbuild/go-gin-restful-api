@@ -27,6 +27,7 @@ const (
 	CodeInternalError    = 4001 // 伺服器內部錯誤
 	CodePasswordHashFail = 4002 // 密碼加密錯誤
 	CodeDatabaseError    = 4003 // 資料庫錯誤
+	CodePasswordTooLong  = 4004 // 密碼太長（超過 bcrypt 72 字元限制）
 )
 
 // 自訂錯誤
@@ -121,4 +122,25 @@ func NewUnsupportedMediaTypeError(message string, code int, err error) *AppError
 		Message:    message,
 		Err:        err,
 	}
+}
+
+// ValidatePasswordLength 驗證密碼長度（bcrypt 限制 72 字元）
+// 如果密碼為空或超過 72 字元，回傳對應的錯誤
+// 如果密碼長度符合要求，回傳 nil
+func ValidatePasswordLength(password string) *AppError {
+	// 空密碼的情況由其他驗證處理（required 標籤），這裡不處理
+	if password == "" {
+		return nil
+	}
+
+	// bcrypt 限制 72 字元，避免 CVE-2025-22228 相關問題
+	if len(password) > 72 {
+		return NewBadRequestError(
+			"Password too long (maximum 72 characters)",
+			CodePasswordTooLong,
+			nil,
+		)
+	}
+
+	return nil
 }
