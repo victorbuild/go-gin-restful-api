@@ -395,3 +395,53 @@ func TestCreateUser_MultipleUsers(t *testing.T) {
 	db.DbConnect.Model(&User{}).Count(&count)
 	assert.Equal(t, int64(3), count, "資料庫中應該有 3 個使用者")
 }
+
+// TestCreateUser_PasswordHashFail 測試密碼加密失敗的情況
+// 當密碼超過 72 字元時，bcrypt.GenerateFromPassword 會回傳錯誤
+func TestCreateUser_PasswordHashFail(t *testing.T) {
+	setupTestDB(t)
+
+	// 建立一個密碼超過 72 字元的使用者
+	user := User{
+		Name:     "Test User",
+		Email:    "test-password-hash-fail@example.com",
+		Password: strings.Repeat("a", 73), // 超過 72 字元限制
+		Role:     "user",
+	}
+
+	userID, err := CreateUser(user)
+
+	// 應該返回錯誤
+	assert.Error(t, err, "密碼超過 72 字元時應該返回錯誤")
+	assert.Equal(t, util.ErrPasswordHashFail, err, "錯誤應該是 ErrPasswordHashFail")
+	assert.Equal(t, uint64(0), userID, "使用者 ID 應該是 0")
+
+	// 驗證資料庫中沒有建立這個使用者
+	var count int64
+	db.DbConnect.Model(&User{}).Where("email = ?", "test-password-hash-fail@example.com").Count(&count)
+	assert.Equal(t, int64(0), count, "資料庫中不應該有這個使用者")
+}
+
+// TestCreateUser_DatabaseError 測試資料庫錯誤的情況
+// 通過關閉資料庫連線來模擬資料庫錯誤
+func TestCreateUser_DatabaseError(t *testing.T) {
+	setupTestDB(t)
+
+	// 關閉資料庫連線來模擬資料庫錯誤
+	sqlDB, _ := db.DbConnect.DB()
+	sqlDB.Close()
+
+	user := User{
+		Name:     "Test User",
+		Email:    "test-database-error@example.com",
+		Password: "testPassword123",
+		Role:     "user",
+	}
+
+	userID, err := CreateUser(user)
+
+	// 應該返回錯誤
+	assert.Error(t, err, "資料庫錯誤時應該返回錯誤")
+	assert.Equal(t, util.ErrDatabaseError, err, "錯誤應該是 ErrDatabaseError")
+	assert.Equal(t, uint64(0), userID, "使用者 ID 應該是 0")
+}
