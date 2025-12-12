@@ -4,8 +4,13 @@ import (
 	"strings"
 	"testing"
 
+	db "restfulapi/internal/database"
+	"restfulapi/internal/util"
+
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // TestUser_CheckPassword 測試密碼驗證功能
@@ -15,7 +20,6 @@ func TestUser_CheckPassword(t *testing.T) {
 	// hash原始密碼
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	assert.NoError(t, err, "產生加密密碼不應該失敗")
-	// 疑問：DefaultCost 是要幹嘛？
 
 	// 建立一個 User 實例，設定加密後的密碼
 	user := User{
@@ -210,15 +214,184 @@ func TestUser_CheckPassword_SpecialCharacters(t *testing.T) {
 }
 
 // ==========================================
-// 額外挑戰（可選）
+// CreateUser 測試
 // ==========================================
 
-// TestUser_CheckPassword_SpecialCharacters 測試特殊字元密碼
-// 提示：測試包含特殊字元的密碼是否能正確驗證
-// 例如：密碼包含 !@#$%^&*() 等特殊字元
+// setupTestDB 設置測試用的 SQLite 記憶體資料庫
+func setupTestDB(t *testing.T) *gorm.DB {
+	// 使用 SQLite 記憶體資料庫（測試後自動清除）
+	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("Failed to connect to test database: %v", err)
+	}
 
-// TestUser_CheckPassword_LongPassword 測試長密碼
-// 提示：測試非常長的密碼（例如 100 個字元）
+	// 定義測試用的 User 結構（SQLite 不支援 bigserial，改用 autoIncrement）
+	// 結構與 User 相同，只是 ID 欄位使用 autoIncrement 而不是 bigserial
+	type TestUser struct {
+		ID       uint64 `gorm:"primaryKey;autoIncrement" json:"id"`
+		Name     string `gorm:"size:255" json:"name"`
+		Password string `gorm:"size:255" json:"password"`
+		Email    string `gorm:"uniqueIndex;size:255" json:"email"`
+		Role     string `gorm:"size:255" json:"role"`
+	}
 
-// TestUser_CheckPassword_Unicode 測試 Unicode 字元密碼
-// 提示：測試包含中文、日文、emoji 等 Unicode 字元的密碼
+	// 自動遷移 User 表（使用 TestUser 結構，但表名還是 users）
+	err = database.Table("users").AutoMigrate(&TestUser{})
+	if err != nil {
+		t.Fatalf("Failed to migrate test database: %v", err)
+	}
+
+	// 替換全域變數（測試用）
+	originalDB := db.DbConnect
+	db.DbConnect = database
+
+	// 清理函數：測試結束後恢復原始資料庫連線
+	t.Cleanup(func() {
+		sqlDB, _ := database.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
+		db.DbConnect = originalDB
+	})
+
+	return database
+}
+
+// TestCreateUser_Success 測試成功建立使用者
+func TestCreateUser_Success(t *testing.T) {
+	setupTestDB(t)
+
+	user := User{
+		Name:     "Test User",
+		Email:    "test-create-success@example.com",
+		Password: "testPassword123",
+		Role:     "user",
+	}
+
+	userID, err := CreateUser(user)
+
+	// 驗證結果
+	assert.NoError(t, err, "建立使用者應該成功")
+	assert.Greater(t, userID, uint64(0), "使用者 ID 應該大於 0")
+
+	// 驗證資料庫中真的有這個使用者
+	var createdUser User
+	result := db.DbConnect.Where("id = ?", userID).First(&createdUser)
+	assert.NoError(t, result.Error, "應該能在資料庫中找到建立的使用者")
+	assert.Equal(t, user.Name, createdUser.Name, "姓名應該一致")
+	assert.Equal(t, user.Email, createdUser.Email, "Email 應該一致")
+	assert.Equal(t, user.Role, createdUser.Role, "角色應該一致")
+	// 驗證密碼已經被加密（不是原始密碼）
+	assert.NotEqual(t, "testPassword123", createdUser.Password, "密碼應該被加密")
+	assert.NotEmpty(t, createdUser.Password, "密碼不應該為空")
+}
+
+// TestCreateUser_EmailExists 測試 Email 已存在的情況
+func TestCreateUser_EmailExists(t *testing.T) {
+	setupTestDB(t)
+
+	// 先建立第一個使用者
+	user1 := User{
+		Name:     "First User",
+		Email:    "test-email-exists@example.com",
+		Password: "password123",
+		Role:     "user",
+	}
+	userID1, err1 := CreateUser(user1)
+	assert.NoError(t, err1, "第一個使用者應該建立成功")
+	assert.Greater(t, userID1, uint64(0))
+
+	// 嘗試用相同 Email 建立第二個使用者
+	user2 := User{
+		Name:     "Second User",
+		Email:    "test-email-exists@example.com", // 相同的 Email
+		Password: "password456",
+		Role:     "user",
+	}
+	userID2, err2 := CreateUser(user2)
+
+	// 應該返回錯誤
+	assert.Error(t, err2, "Email 已存在時應該返回錯誤")
+	assert.Equal(t, util.ErrEmailExists, err2, "錯誤應該是 ErrEmailExists")
+	assert.Equal(t, uint64(0), userID2, "使用者 ID 應該是 0")
+
+	// 驗證資料庫中只有一個使用者（第一個）
+	var count int64
+	db.DbConnect.Model(&User{}).Where("email = ?", "test-email-exists@example.com").Count(&count)
+	assert.Equal(t, int64(1), count, "資料庫中應該只有一個使用者")
+}
+
+// TestCreateUser_PasswordEncryption 測試密碼加密功能
+func TestCreateUser_PasswordEncryption(t *testing.T) {
+	setupTestDB(t)
+
+	user := User{
+		Name:     "Test User",
+		Email:    "test-password-encryption@example.com",
+		Password: "originalPassword123",
+		Role:     "user",
+	}
+
+	userID, err := CreateUser(user)
+	assert.NoError(t, err)
+	assert.Greater(t, userID, uint64(0))
+
+	// 從資料庫讀取使用者
+	var createdUser User
+	db.DbConnect.Where("id = ?", userID).First(&createdUser)
+
+	// 驗證密碼已經被加密
+	assert.NotEqual(t, "originalPassword123", createdUser.Password, "密碼應該被加密，不應該是原始密碼")
+	assert.NotEmpty(t, createdUser.Password, "密碼不應該為空")
+
+	// 驗證可以使用 CheckPassword 驗證原始密碼
+	assert.True(t, createdUser.CheckPassword("originalPassword123"), "應該可以用原始密碼驗證")
+	assert.False(t, createdUser.CheckPassword("wrongPassword"), "錯誤的密碼應該驗證失敗")
+}
+
+// TestCreateUser_MultipleUsers 測試建立多個使用者
+func TestCreateUser_MultipleUsers(t *testing.T) {
+	setupTestDB(t)
+
+	users := []User{
+		{
+			Name:     "User 1",
+			Email:    "user1@example.com",
+			Password: "password1",
+			Role:     "user",
+		},
+		{
+			Name:     "User 2",
+			Email:    "user2@example.com",
+			Password: "password2",
+			Role:     "admin",
+		},
+		{
+			Name:     "User 3",
+			Email:    "user3@example.com",
+			Password: "password3",
+			Role:     "user",
+		},
+	}
+
+	// 建立多個使用者
+	userIDs := make([]uint64, len(users))
+	for i, user := range users {
+		userID, err := CreateUser(user)
+		assert.NoError(t, err, "建立使用者 %d 應該成功", i+1)
+		assert.Greater(t, userID, uint64(0), "使用者 ID 應該大於 0")
+		userIDs[i] = userID
+	}
+
+	// 驗證所有使用者 ID 都不同
+	for i := 0; i < len(userIDs); i++ {
+		for j := i + 1; j < len(userIDs); j++ {
+			assert.NotEqual(t, userIDs[i], userIDs[j], "使用者 ID 應該不同")
+		}
+	}
+
+	// 驗證資料庫中有正確數量的使用者
+	var count int64
+	db.DbConnect.Model(&User{}).Count(&count)
+	assert.Equal(t, int64(3), count, "資料庫中應該有 3 個使用者")
+}
