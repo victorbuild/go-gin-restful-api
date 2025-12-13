@@ -48,8 +48,12 @@ func InitRabbitMQ() {
 	log.Println("✅ RabbitMQ 連線成功")
 }
 
-// PublishMessage 發送訊息
-func PublishMessage(queueName string, message string) {
+// publishMessageFunc 用於測試時替換的函數變數
+var publishMessageFunc = func(queueName string, message string) {
+	if RabbitChannel == nil {
+		log.Println("⚠️ RabbitMQ Channel 未初始化，跳過訊息發送")
+		return
+	}
 	err := RabbitChannel.PublishWithContext(
 		nil,
 		"",
@@ -63,9 +67,20 @@ func PublishMessage(queueName string, message string) {
 	)
 	if err != nil {
 		log.Println("❌ 發送訊息失敗:", err)
+		return
 	}
 
 	log.Println("✅ 訊息發送成功:", message)
+}
+
+// PublishMessage 發送訊息
+func PublishMessage(queueName string, message string) {
+	publishMessageFunc(queueName, message)
+}
+
+// SetPublishMessageFunc 設置 PublishMessage 的實現（測試用）
+func SetPublishMessageFunc(fn func(string, string)) {
+	publishMessageFunc = fn
 }
 
 // CloseRabbitMQ 關閉 RabbitMQ 連線
